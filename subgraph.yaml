@@ -7,6 +7,7 @@ dataSources:
     network: near-testnet
     source:
       account: parh.testnet
+      startBlock: 95212323
     mapping:
       apiVersion: 0.0.6
       language: wasm/assemblyscript
