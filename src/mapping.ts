@@ -1,4 +1,6 @@
-import {json, log, near} from "@graphprotocol/graph-ts"
+import {json, log, near, JSONValue} from "@graphprotocol/graph-ts"
+import {User, UserStatistics, UserInGameInfo, Game,
+    FiveInfo, Five, Team, Goalie, FieldPlayer, Event} from "../generated/schema"
 
 
 export function handleReceipt(
@@ -42,7 +44,35 @@ function handleStartGame(
     const args = json.fromString(functionCall.args.toString()).toObject()
 
     // main logic
-    // TODO: write the main logic
+    const logs = outcome.logs
+    if (logs.length == 0) {
+        log.error("handleStartGame: No logs", [])
+        return
+    }
+    let user1: User | null = null
+    let user2: User | null = null
+    // {"game_id": 54, "account_id": parh.testnet, "opponent_id": nft.testnet}
+    for (let i = 0; i < logs.length; i++) {
+        const log = logs[i]
+        const logData = json.fromString(log).toObject()
+        user1 = User.load((logData.get("account_id") as JSONValue).toString())
+        if (!user1) {
+            user1 = new User((logData.get("account_id") as JSONValue).toString())
+        }
+        user2 = User.load((logData.get("opponent_id") as JSONValue).toString())
+        if (!user2) {
+            user2 = new User((logData.get("opponent_id") as JSONValue).toString())
+        }
+        // let game = Game.load((logData.get("game_id") as JSONValue).toI64().toString())
+    }
+
+    if (user1 == null || user2 == null) {
+        log.error("handleStartGame: user1 or user2 is null", [])
+        return
+    }
+    user1.save()
+    user2.save()
+
 
 }
 
