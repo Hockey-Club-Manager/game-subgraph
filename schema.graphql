@@ -2,7 +2,7 @@ type User @entity {
     id: ID!
     is_available: Boolean!
     statistics: UserStatistics!
-    games: [Game]!
+    games: [Game!]!
 }
 
 type UserStatistics @entity {
@@ -26,10 +26,11 @@ type Game @entity {
     player_with_puck: FieldPlayer
     zone_number: Int!
     turns: Int!
-    events: [Event]!
+    events: [Event!]!
 }
 
 type Event @entity {
+    id: ID!
     player_with_puck: Int!
     action: String!
     zone_number: Int!
@@ -40,7 +41,7 @@ type Event @entity {
 
 type Five @entity {
     id: ID!
-    field_players: [FieldPlayer]!
+    field_players: [FieldPlayer!]!
     number: String!
     ice_time_priority: String!
     tactic: String!
@@ -55,18 +56,14 @@ type FiveInfo @entity {
 
 type Team @entity {
     id: ID!
-    fives: [FiveInfo]!
+    fives: [FiveInfo!]!
     active_five: String!
     goalies: [Goalie!]!
     active_goalie: Goalie
     score: Int!
 }
-#pub(crate) goalies: HashMap<GoalieNumber, Goalie>,
-#pub(crate) active_goalie: GoalieNumber,
 
-#pub(crate) score: u8,
-
-# user info
+# UserInfo
 type UserInGameInfo @entity {
     # id is game_id + _ + user_id. For example: 12345_1 or 12345_2 for user 1 and 2 correspondingly in game 12345
     id: ID!
@@ -77,18 +74,11 @@ type UserInGameInfo @entity {
     is_goalie_out: Boolean!
 }
 
-
-type TokenBalance {
-    id: ID!
-    token_id: BigInt
-    balance: BigInt!
-}
-
-type FieldPlayer {
+type FieldPlayer @entity {
     id: ID!  # id of NFT
     img: String
     name: String
-    teamwork: Float
+    teamwork: BigDecimal
 
     reality: Boolean!
     nationality: String!

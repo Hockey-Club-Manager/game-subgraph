@@ -12,7 +12,16 @@ dataSources:
       apiVersion: 0.0.6
       language: wasm/assemblyscript
       entities:
-        - ExampleEntity
+        - User
+        - UserStatistics
+        - Game
+        - Event
+        - Five
+        - FiveInfo
+        - Team
+        - UserInGameInfo
+        - FieldPlayer
+        - Goalie
       receiptHandlers:
         - handler: handleReceipt
       file: ./src/mapping.ts

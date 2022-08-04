@@ -1,34 +1,72 @@
-import { near, BigInt } from "@graphprotocol/graph-ts"
-import { ExampleEntity } from "../generated/schema"
+import {json, log, near} from "@graphprotocol/graph-ts"
+
 
 export function handleReceipt(
-  receiptWithOutcome: near.ReceiptWithOutcome
+    receiptWithOutcome: near.ReceiptWithOutcome
 ): void {
-  // Entities can be loaded from the store using a string ID; this ID
-  // needs to be unique across all entities of the same type
-  let entity = ExampleEntity.load(receiptWithOutcome.receipt.id.toHex())
+    const actions = receiptWithOutcome.receipt.actions;
+    for (let i = 0; i < actions.length; i++) {
+        const functionCall = actions[i].toFunctionCall();
+        switch (functionCall.methodName) {
+            case "start_game":
+                handleStartGame(actions[i], receiptWithOutcome);
+                break;
+            case "generate_event":
+                handleGenerateEvent(actions[i], receiptWithOutcome);
+                break;
+            default:
+                log.info("handleReceipt: Invalid method name: {}", [functionCall.methodName]);
+        }
+    }
+}
 
-  // Entities only exist after they have been saved to the store;
-  // `null` checks allow to create entities on demand
-  if (!entity) {
-    entity = new ExampleEntity(receiptWithOutcome.receipt.id.toHex())
 
-    // Entity fields can be set using simple assignments
-    entity.count = BigInt.fromI32(0)
-  }
+function handleStartGame(
+    action: near.ActionValue,
+    receiptWithOutcome: near.ReceiptWithOutcome
+): void {
+    // preparing and validating
+    if (action.kind != near.ActionKind.FUNCTION_CALL) {
+        log.error("handleStartGame: action is not a function call", []);
+        return;
+    }
+    const functionCall = action.toFunctionCall();
+    const methodName = functionCall.methodName
 
-  // BigInt and BigDecimal math are supported
-  entity.count = entity.count + BigInt.fromI32(1)
+    if (!(methodName == "start_game")) {
+        log.error("handleStartGame: Invalid method name: {}", [methodName]);
+        return
+    }
 
-  // Entity fields can be set based on receipt information
-  entity.block = receiptWithOutcome.block.header.hash
+    const outcome = receiptWithOutcome.outcome;
+    const args = json.fromString(functionCall.args.toString()).toObject()
 
-  // Entities can be written to the store with `.save()`
-  entity.save()
+    // main logic
+    // TODO: write the main logic
 
-  // Note: If a handler doesn't require existing field values, it is faster
-  // _not_ to load the entity from the store. Instead, create it fresh with
-  // `new Entity(...)`, set the fields that should be updated and save the
-  // entity back to the store. Fields that were not set or unset remain
-  // unchanged, allowing for partial updates to be applied.
+}
+
+function handleGenerateEvent(
+    action: near.ActionValue,
+    receiptWithOutcome: near.ReceiptWithOutcome
+): void {
+
+    // preparing and validating
+    if (action.kind != near.ActionKind.FUNCTION_CALL) {
+        log.error("handleGenerateEvent: action is not a function call", []);
+        return;
+    }
+    const functionCall = action.toFunctionCall();
+    const methodName = functionCall.methodName
+
+    if (!(methodName == "generate_event")) {
+        log.error("handleGenerateEvent: Invalid method name: {}", [methodName]);
+        return
+    }
+
+    const outcome = receiptWithOutcome.outcome;
+    const args = json.fromString(functionCall.args.toString()).toObject()
+
+    // main logic
+    // TODO: write the main logic
 }
