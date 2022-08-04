@@ -1,5 +1,125 @@
-type ExampleEntity @entity {
-  id: ID!
-  block: Bytes!
-  count: BigInt!
+type User @entity {
+    id: ID!
+    is_available: Boolean!
+    statistics: UserStatistics!
+    games: [Game]!
+}
+
+type UserStatistics @entity {
+    # id is user's id
+    id: ID!
+    victories: Int!
+    losses: Int!
+    total_reward: BigInt!
+    total_loss: BigInt!
+    total_goals: Int!
+    total_misses: Int!
+}
+
+type Game @entity {
+    id: ID!
+    user1: UserInGameInfo!
+    user2: UserInGameInfo!
+    reward: BigInt!
+    winner_index: Int
+    last_event_generation_time: BigInt
+    player_with_puck: FieldPlayer
+    zone_number: Int!
+    turns: Int!
+    events: [Event]!
+}
+
+type Event @entity {
+    player_with_puck: Int!
+    action: String!
+    zone_number: Int!
+    time: BigInt!
+    user1: UserInGameInfo!
+    user2: UserInGameInfo!
+}
+
+type Five @entity {
+    id: ID!
+    field_players: [FieldPlayer]!
+    number: String!
+    ice_time_priority: String!
+    tactic: String!
+    time_field: Int!
+}
+
+type FiveInfo @entity {
+    id: ID!
+    five_number: String!
+    five: Five!
+}
+
+type Team @entity {
+    id: ID!
+    fives: [FiveInfo]!
+    active_five: String!
+    goalies: [Goalie!]!
+    active_goalie: Goalie
+    score: Int!
+}
+#pub(crate) goalies: HashMap<GoalieNumber, Goalie>,
+#pub(crate) active_goalie: GoalieNumber,
+
+#pub(crate) score: u8,
+
+# user info
+type UserInGameInfo @entity {
+    # id is game_id + _ + user_id. For example: 12345_1 or 12345_2 for user 1 and 2 correspondingly in game 12345
+    id: ID!
+    user: User! # instead of account_id
+    team: Team!
+    take_to_called: Boolean!  # if user took timeout
+    coach_speech_called: Boolean!
+    is_goalie_out: Boolean!
+}
+
+
+type TokenBalance {
+    id: ID!
+    token_id: BigInt
+    balance: BigInt!
+}
+
+type FieldPlayer {
+    id: ID!  # id of NFT
+    img: String
+    name: String
+    teamwork: Float
+
+    reality: Boolean!
+    nationality: String!
+    birthday: BigInt!
+    player_type: String!
+
+    number: Int!
+    hand: String!
+    player_role: String!
+    native_position: String!
+    stats: String!
+
+    current_position: String!
+
+    user_id: Int  # 1 or 2
+}
+
+type Goalie @entity {
+    id: ID!  # id of NFT
+    img: String
+    name: String
+    user_id: Int  # 1 or 2
+    goalie_number: String!  # MainGoalkeeper or SubstituteGoalkeeper
+
+    reality: Boolean!
+    nationality: String!
+    birthday: BigInt!
+    player_type: String!
+
+    number: Int!
+    hand: String!
+    player_role: String!
+    stats: String!
 }
