@@ -275,13 +275,21 @@ export class Game extends Entity {
     this.set("turns", Value.fromI32(value));
   }
 
-  get events(): Array<string> {
+  get events(): Array<string> | null {
     let value = this.get("events");
-    return value!.toStringArray();
+    if (!value || value.kind == ValueKind.NULL) {
+      return null;
+    } else {
+      return value.toStringArray();
+    }
   }
 
-  set events(value: Array<string>) {
-    this.set("events", Value.fromStringArray(value));
+  set events(value: Array<string> | null) {
+    if (!value) {
+      this.unset("events");
+    } else {
+      this.set("events", Value.fromStringArray(<Array<string>>value));
+    }
   }
 }
 
@@ -371,6 +379,66 @@ export class Event extends Entity {
   }
 }
 
+export class PlayerOnPosition extends Entity {
+  constructor(id: string) {
+    super();
+    this.set("id", Value.fromString(id));
+  }
+
+  save(): void {
+    let id = this.get("id");
+    assert(id != null, "Cannot save PlayerOnPosition entity without an ID");
+    if (id) {
+      assert(
+        id.kind == ValueKind.STRING,
+        `Entities of type PlayerOnPosition must have an ID of type String but the id '${id.displayData()}' is of type ${id.displayKind()}`
+      );
+      store.set("PlayerOnPosition", id.toString(), this);
+    }
+  }
+
+  static load(id: string): PlayerOnPosition | null {
+    return changetype<PlayerOnPosition | null>(
+      store.get("PlayerOnPosition", id)
+    );
+  }
+
+  get id(): string {
+    let value = this.get("id");
+    return value!.toString();
+  }
+
+  set id(value: string) {
+    this.set("id", Value.fromString(value));
+  }
+
+  get player(): string | null {
+    let value = this.get("player");
+    if (!value || value.kind == ValueKind.NULL) {
+      return null;
+    } else {
+      return value.toString();
+    }
+  }
+
+  set player(value: string | null) {
+    if (!value) {
+      this.unset("player");
+    } else {
+      this.set("player", Value.fromString(<string>value));
+    }
+  }
+
+  get position(): string {
+    let value = this.get("position");
+    return value!.toString();
+  }
+
+  set position(value: string) {
+    this.set("position", Value.fromString(value));
+  }
+}
+
 export class Five extends Entity {
   constructor(id: string) {
     super();
@@ -448,56 +516,6 @@ export class Five extends Entity {
   }
 }
 
-export class FiveInfo extends Entity {
-  constructor(id: string) {
-    super();
-    this.set("id", Value.fromString(id));
-  }
-
-  save(): void {
-    let id = this.get("id");
-    assert(id != null, "Cannot save FiveInfo entity without an ID");
-    if (id) {
-      assert(
-        id.kind == ValueKind.STRING,
-        `Entities of type FiveInfo must have an ID of type String but the id '${id.displayData()}' is of type ${id.displayKind()}`
-      );
-      store.set("FiveInfo", id.toString(), this);
-    }
-  }
-
-  static load(id: string): FiveInfo | null {
-    return changetype<FiveInfo | null>(store.get("FiveInfo", id));
-  }
-
-  get id(): string {
-    let value = this.get("id");
-    return value!.toString();
-  }
-
-  set id(value: string) {
-    this.set("id", Value.fromString(value));
-  }
-
-  get five_number(): string {
-    let value = this.get("five_number");
-    return value!.toString();
-  }
-
-  set five_number(value: string) {
-    this.set("five_number", Value.fromString(value));
-  }
-
-  get five(): string {
-    let value = this.get("five");
-    return value!.toString();
-  }
-
-  set five(value: string) {
-    this.set("five", Value.fromString(value));
-  }
-}
-
 export class Team extends Entity {
   constructor(id: string) {
     super();
@@ -547,6 +565,15 @@ export class Team extends Entity {
     this.set("active_five", Value.fromString(value));
   }
 
+  get penalty_players(): Array<string> {
+    let value = this.get("penalty_players");
+    return value!.toStringArray();
+  }
+
+  set penalty_players(value: Array<string>) {
+    this.set("penalty_players", Value.fromStringArray(value));
+  }
+
   get goalies(): Array<string> {
     let value = this.get("goalies");
     return value!.toStringArray();
@@ -556,21 +583,13 @@ export class Team extends Entity {
     this.set("goalies", Value.fromStringArray(value));
   }
 
-  get active_goalie(): string | null {
+  get active_goalie(): string {
     let value = this.get("active_goalie");
-    if (!value || value.kind == ValueKind.NULL) {
-      return null;
-    } else {
-      return value.toString();
-    }
+    return value!.toString();
   }
 
-  set active_goalie(value: string | null) {
-    if (!value) {
-      this.unset("active_goalie");
-    } else {
-      this.set("active_goalie", Value.fromString(<string>value));
-    }
+  set active_goalie(value: string) {
+    this.set("active_goalie", Value.fromString(value));
   }
 
   get score(): i32 {
@@ -778,6 +797,15 @@ export class FieldPlayer extends Entity {
     this.set("player_type", Value.fromString(value));
   }
 
+  get number_of_penalty_events(): BigInt {
+    let value = this.get("number_of_penalty_events");
+    return value!.toBigInt();
+  }
+
+  set number_of_penalty_events(value: BigInt) {
+    this.set("number_of_penalty_events", Value.fromBigInt(value));
+  }
+
   get number(): i32 {
     let value = this.get("number");
     return value!.toI32();
@@ -821,24 +849,6 @@ export class FieldPlayer extends Entity {
 
   set stats(value: string) {
     this.set("stats", Value.fromString(value));
-  }
-
-  get current_position(): string {
-    let value = this.get("current_position");
-    return value!.toString();
-  }
-
-  set current_position(value: string) {
-    this.set("current_position", Value.fromString(value));
-  }
-
-  get user_id(): i32 {
-    let value = this.get("user_id");
-    return value!.toI32();
-  }
-
-  set user_id(value: i32) {
-    this.set("user_id", Value.fromI32(value));
   }
 }
 
@@ -905,15 +915,6 @@ export class Goalie extends Entity {
     } else {
       this.set("name", Value.fromString(<string>value));
     }
-  }
-
-  get user_id(): i32 {
-    let value = this.get("user_id");
-    return value!.toI32();
-  }
-
-  set user_id(value: i32) {
-    this.set("user_id", Value.fromI32(value));
   }
 
   get goalie_number(): string {

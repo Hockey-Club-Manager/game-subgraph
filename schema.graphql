@@ -26,7 +26,7 @@ type Game @entity {
     player_with_puck: FieldPlayer
     zone_number: Int!
     turns: Int!
-    events: [Event!]!
+    events: [Event!]
 }
 
 type Event @entity {
@@ -39,27 +39,28 @@ type Event @entity {
     user2: UserInGameInfo!
 }
 
+type PlayerOnPosition @entity {
+    id: ID!  # id is five's id + _ + position
+    player: FieldPlayer
+    position: String!
+}
+
 type Five @entity {
-    id: ID!
-    field_players: [FieldPlayer!]!
+    id: ID!  # id is game_id + _ + user_id + _ + five_number. Example: 54_1_First
+    field_players: [PlayerOnPosition!]!
     number: String!
     ice_time_priority: String!
     tactic: String!
     time_field: Int!
 }
 
-type FiveInfo @entity {
-    id: ID!
-    five_number: String!
-    five: Five!
-}
-
 type Team @entity {
     id: ID!
-    fives: [FiveInfo!]!
+    fives: [Five!]!
     active_five: String!
+    penalty_players: [FieldPlayer!]!
     goalies: [Goalie!]!
-    active_goalie: Goalie
+    active_goalie: String!
     score: Int!
 }
 
@@ -75,7 +76,7 @@ type UserInGameInfo @entity {
 }
 
 type FieldPlayer @entity {
-    id: ID!  # id of NFT
+    id: ID!  # id of NFT + _ + game_id
     img: String
     name: String
     teamwork: BigDecimal
@@ -84,23 +85,19 @@ type FieldPlayer @entity {
     nationality: String!
     birthday: BigInt!
     player_type: String!
+    number_of_penalty_events: BigInt!
 
     number: Int!
     hand: String!
     player_role: String!
     native_position: String!
     stats: String!
-
-    current_position: String!
-
-    user_id: Int  # 1 or 2
 }
 
 type Goalie @entity {
-    id: ID!  # id of NFT
+    id: ID!  # id of NFT + _ + game_id
     img: String
     name: String
-    user_id: Int  # 1 or 2
     goalie_number: String!  # MainGoalkeeper or SubstituteGoalkeeper
 
     reality: Boolean!

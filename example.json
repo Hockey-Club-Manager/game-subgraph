@@ -1,0 +1,99 @@
+{
+  "Game": {
+    "game_id": 54,
+    "user1": {
+      "Please, see user2": ""
+    },
+    "user2": {
+      "user_id": 2,
+      "team": {
+        "field_players": {
+          "token-123901283": {},
+          "token-123281222": {},
+          "token-453058434": {
+            "id": "token-453058434",
+            "img": "",
+            "name": "Serjudenkiy",
+            "teamwork": 60,
+            "reality": false,
+            "nationality": "US",
+            "birthday": 12345567787,
+            "player_type": "FieldPlayer",
+            "number": 65,
+            "hand": "L",
+            "player_role": "Playmaker",
+            "number_of_penalty_events": 0,
+            "native_position": "C",
+            "stats": {
+              "strength": 30.758303480224182,
+              "iq": 65,
+              "morale": 59,
+              "skating": 54,
+              "shooting": 75,
+              "some_shit": "another_shit"
+            },
+            "user_id": 2
+          }
+        },
+        "fives": {
+          "First": {
+            "field_players": {
+              "LW": "token-12345678",
+              "RD": "token-53873284",
+              "C": "token-23098223",
+              "LD": "token-90872398",
+              "RW": "token-73472018"
+            },
+            "number": "First",
+            "ice_time_priority": "Normal",
+            "tactic": "Aggressive",
+            "time_field": 0
+          },
+          "Second": {}
+        },
+        "goalies": {
+          "MainGoalkeeper":{
+            "id": "token-10987654321",
+            "img": "",
+            "stats": {
+              "glove_and_blocker": 67,
+              "pads": 76,
+              "stand": 86,
+              "stretch": 81,
+              "morale": 90
+            },
+            "reality": false,
+            "nationality": "US",
+            "birthday": 123923814332,
+            "player_type": "Goalie",
+            "player_role": "Standup",
+            "hand": "L",
+            "name": "Bakin",
+            "number": 54,
+            "user_id": 2
+          }
+        },
+        "active_five": "First",
+        "active_goalie": "MainGoalkeeper",
+        "score": 1
+      },
+      "account_id":  "nft.parh.testnet",
+      "take_to_called": false,
+      "coach_speech_called": false,
+      "is_goalie_out": false
+    },
+    "reward": {
+      "token_id": "near",
+      "balance": "2000000000000000000000000"
+    },
+    "winner_index": null,
+    "last_event_generation_time": 0,
+    "player_with_puck": [
+      1,
+      "token-12345678910"
+    ],
+    "zone_number": 2,
+    "turns": 0,
+    "last_action": "StartGame"
+  }
+}
