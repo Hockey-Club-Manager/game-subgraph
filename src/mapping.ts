@@ -354,6 +354,7 @@ function handleGenerateEvent(
     gameEvents.push(event.id)
     game.events = gameEvents
     game.turns += 1
+    game.last_event_generation_time = event.time
 
     // if game finished
     if (event.action == "GameFinished") {
