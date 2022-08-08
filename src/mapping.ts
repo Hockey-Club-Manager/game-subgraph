@@ -171,6 +171,9 @@ export function handleReceipt(
 ): void {
     const actions = receiptWithOutcome.receipt.actions;
     for (let i = 0; i < actions.length; i++) {
+        if (actions[i].kind != near.ActionKind.FUNCTION_CALL) {
+            continue
+        }
         const functionCall = actions[i].toFunctionCall();
         if (functionCall.methodName == "start_game")
             handleStartGame(actions[i], receiptWithOutcome)

@@ -4,10 +4,10 @@
   "scripts": {
     "codegen": "graph codegen",
     "build": "graph build",
-    "deploy": "graph deploy --node https://api.thegraph.com/deploy/ NFT-Hockey/game-subgraph NFT-Hockey/game",
+    "deploy": "graph deploy --node https://api.thegraph.com/deploy/ --ipfs https://api.thegraph.com/ipfs/ NFT-Hockey/game",
     "create-local": "graph create --node http://localhost:8020/ NFT-Hockey/game-subgraph",
     "remove-local": "graph remove --node http://localhost:8020/ NFT-Hockey/game-subgraph",
-    "deploy-local": "graph deploy --node http://localhost:8020/ --ipfs http://localhost:5001 NFT-Hockey/game",
+    "deploy-local": "graph deploy --node http://localhost:8020/ --ipfs http://localhost:5001 .",
     "full-deploy": "yarn codegen && yarn build && yarn deploy",
     "test": "graph test"
   },
