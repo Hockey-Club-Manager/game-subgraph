@@ -17,11 +17,11 @@ dataSources:
         - Game
         - Event
         - Five
-        - FiveInfo
         - Team
         - UserInGameInfo
         - FieldPlayer
         - Goalie
+        - PlayerOnPosition
       receiptHandlers:
         - handler: handleReceipt
       file: ./src/mapping.ts
