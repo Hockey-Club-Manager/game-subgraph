@@ -324,13 +324,13 @@ export class Event extends Entity {
     this.set("id", Value.fromString(value));
   }
 
-  get player_with_puck(): i32 {
+  get player_with_puck(): string {
     let value = this.get("player_with_puck");
-    return value!.toI32();
+    return value!.toString();
   }
 
-  set player_with_puck(value: i32) {
-    this.set("player_with_puck", Value.fromI32(value));
+  set player_with_puck(value: string) {
+    this.set("player_with_puck", Value.fromString(value));
   }
 
   get action(): string {
