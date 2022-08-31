@@ -9,7 +9,9 @@ import {
     Team,
     User,
     UserInGameInfo,
-    UserStatistics
+    UserStatistics,
+    Account,
+    AccountWithDeposit
 } from "../generated/schema"
 import {typedMapToString} from "./utils"
 
@@ -156,6 +158,10 @@ function updateUserInGameInfo(userInGameInfo: UserInGameInfo, userInGameInfoData
     userInGameInfo.save()
 }
 
+// function validateHandlerAction(functionName: string, handlerName: string, action: near.ActionValue): boolean {
+//
+// }
+
 
 function initUserStatistics(statistics: UserStatistics): void {
     statistics.victories = 0
@@ -179,6 +185,20 @@ export function handleReceipt(
             handleStartGame(actions[i], receiptWithOutcome)
         else if (functionCall.methodName == "generate_event")
             handleGenerateEvent(actions[i], receiptWithOutcome)
+        else if (functionCall.methodName == "register_account")
+            handleRegisterAccountEvent(actions[i], receiptWithOutcome)
+        else if (functionCall.methodName == "send_friend_request")
+            handleSendFriendRequestEvent(actions[i], receiptWithOutcome)
+        else if (functionCall.methodName == "accept_friend_request")
+            handleAcceptFriendRequestEvent(actions[i], receiptWithOutcome)
+        else if (functionCall.methodName == "decline_friend_request")
+            handleDeclineFriendRequestEvent(actions[i], receiptWithOutcome)
+        else if (functionCall.methodName == "send_request_play")
+            handleSendRequestPlayEvent(actions[i], receiptWithOutcome)
+        else if (functionCall.methodName == "accept_request_play")
+            handleAcceptRequestPlayEvent(actions[i], receiptWithOutcome)
+        else if (functionCall.methodName == "decline_request_play")
+            handleDeclineRequestPlayEvent(actions[i], receiptWithOutcome)
         else
             log.info("handleReceipt: Invalid method name: {}", [functionCall.methodName])
     }
@@ -275,7 +295,6 @@ function handleStartGame(
     user2.is_available = false
     user1.save()
     user2.save()
-
 
     game.save()
 }
@@ -381,4 +400,54 @@ function handleGenerateEvent(
         game.reward = reward
     }
     game.save()
+}
+
+function handleRegisterAccountEvent(action: near.ActionValue, receiptWithOutcome: near.ReceiptWithOutcome) {
+    if (action.kind != near.ActionKind.FUNCTION_CALL) {
+        log.error("handleRegisterAccountEvent: action is not a function call", []);
+        return;
+    }
+    const functionCall = action.toFunctionCall();
+    const methodName = functionCall.methodName
+
+    if (!(methodName == "register_account")) {
+        log.error("handleRegisterAccountEvent: Invalid method name: {}", [methodName]);
+        return
+    }
+
+    let account = Account.load(receiptWithOutcome.receipt.signerId)
+    if (!account) {
+        account = new Account(receiptWithOutcome.receipt.signerId)
+        account.friend_requests_received = new Array<string>()
+        account.sent_friend_requests = new Array<string>()
+        account.friends = new Array<string>()
+        account.sent_requests_play = new Array<string>()
+        account.requests_play_received = new Array<string>()
+        account.save()
+    }
+
+}
+
+function handleSendFriendRequestEvent(action: near.ActionValue, receiptWithOutcome: near.ReceiptWithOutcome) {
+
+}
+
+function handleAcceptFriendRequestEvent(action: near.ActionValue, receiptWithOutcome: near.ReceiptWithOutcome) {
+
+}
+
+function handleDeclineFriendRequestEvent(action: near.ActionValue, receiptWithOutcome: near.ReceiptWithOutcome) {
+
+}
+
+function handleSendRequestPlayEvent(action: near.ActionValue, receiptWithOutcome: near.ReceiptWithOutcome) {
+
+}
+
+function handleAcceptRequestPlayEvent(action: near.ActionValue, receiptWithOutcome: near.ReceiptWithOutcome) {
+
+}
+
+function handleDeclineRequestPlayEvent(action: near.ActionValue, receiptWithOutcome: near.ReceiptWithOutcome) {
+
 }

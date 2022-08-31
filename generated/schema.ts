@@ -68,6 +68,143 @@ export class User extends Entity {
   set games(value: Array<string>) {
     this.set("games", Value.fromStringArray(value));
   }
+
+  get deposit(): BigInt | null {
+    let value = this.get("deposit");
+    if (!value || value.kind == ValueKind.NULL) {
+      return null;
+    } else {
+      return value.toBigInt();
+    }
+  }
+
+  set deposit(value: BigInt | null) {
+    if (!value) {
+      this.unset("deposit");
+    } else {
+      this.set("deposit", Value.fromBigInt(<BigInt>value));
+    }
+  }
+}
+
+export class Account extends Entity {
+  constructor(id: string) {
+    super();
+    this.set("id", Value.fromString(id));
+  }
+
+  save(): void {
+    let id = this.get("id");
+    assert(id != null, "Cannot save Account entity without an ID");
+    if (id) {
+      assert(
+        id.kind == ValueKind.STRING,
+        `Entities of type Account must have an ID of type String but the id '${id.displayData()}' is of type ${id.displayKind()}`
+      );
+      store.set("Account", id.toString(), this);
+    }
+  }
+
+  static load(id: string): Account | null {
+    return changetype<Account | null>(store.get("Account", id));
+  }
+
+  get id(): string {
+    let value = this.get("id");
+    return value!.toString();
+  }
+
+  set id(value: string) {
+    this.set("id", Value.fromString(value));
+  }
+
+  get friends(): Array<string> {
+    let value = this.get("friends");
+    return value!.toStringArray();
+  }
+
+  set friends(value: Array<string>) {
+    this.set("friends", Value.fromStringArray(value));
+  }
+
+  get sent_friend_requests(): Array<string> {
+    let value = this.get("sent_friend_requests");
+    return value!.toStringArray();
+  }
+
+  set sent_friend_requests(value: Array<string>) {
+    this.set("sent_friend_requests", Value.fromStringArray(value));
+  }
+
+  get friend_requests_received(): Array<string> {
+    let value = this.get("friend_requests_received");
+    return value!.toStringArray();
+  }
+
+  set friend_requests_received(value: Array<string>) {
+    this.set("friend_requests_received", Value.fromStringArray(value));
+  }
+
+  get sent_requests_play(): Array<string> {
+    let value = this.get("sent_requests_play");
+    return value!.toStringArray();
+  }
+
+  set sent_requests_play(value: Array<string>) {
+    this.set("sent_requests_play", Value.fromStringArray(value));
+  }
+
+  get requests_play_received(): Array<string> {
+    let value = this.get("requests_play_received");
+    return value!.toStringArray();
+  }
+
+  set requests_play_received(value: Array<string>) {
+    this.set("requests_play_received", Value.fromStringArray(value));
+  }
+}
+
+export class AccountWithDeposit extends Entity {
+  constructor(id: string) {
+    super();
+    this.set("id", Value.fromString(id));
+  }
+
+  save(): void {
+    let id = this.get("id");
+    assert(id != null, "Cannot save AccountWithDeposit entity without an ID");
+    if (id) {
+      assert(
+        id.kind == ValueKind.STRING,
+        `Entities of type AccountWithDeposit must have an ID of type String but the id '${id.displayData()}' is of type ${id.displayKind()}`
+      );
+      store.set("AccountWithDeposit", id.toString(), this);
+    }
+  }
+
+  static load(id: string): AccountWithDeposit | null {
+    return changetype<AccountWithDeposit | null>(
+      store.get("AccountWithDeposit", id)
+    );
+  }
+
+  get id(): string {
+    let value = this.get("id");
+    return value!.toString();
+  }
+
+  set id(value: string) {
+    this.set("id", Value.fromString(value));
+  }
+
+  get deposit(): BigInt {
+    let value = this.get("deposit");
+    return value!.toBigInt();
+  }
+
+  set deposit(value: BigInt) {
+    this.set("deposit", Value.fromBigInt(value));
+  }
 }
 
 export class UserStatistics extends Entity {

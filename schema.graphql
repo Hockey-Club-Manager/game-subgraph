@@ -3,6 +3,21 @@ type User @entity {
     is_available: Boolean!
     statistics: UserStatistics!
     games: [Game!]!
+    deposit: BigInt
+}
+
+type Account @entity {
+    id: ID!  # user_id (AccountId)
+    friends: [Account!]!
+    sent_friend_requests: [Account!]!
+    friend_requests_received: [Account!]!
+    sent_requests_play: [AccountWithDeposit!]!
+    requests_play_received: [AccountWithDeposit!]!
+}
+
+type AccountWithDeposit @entity {
+    id: ID!
+    deposit: BigInt!
 }
 
 type UserStatistics @entity {
