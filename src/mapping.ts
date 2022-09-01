@@ -1,5 +1,7 @@
-import {BigDecimal, BigInt, json, JSONValue, log, near, TypedMap} from "@graphprotocol/graph-ts"
+import {BigDecimal, BigInt, json, JSONValue, log, near, store, TypedMap} from "@graphprotocol/graph-ts"
 import {
+    Account,
+    AccountWithDeposit,
     Event,
     FieldPlayer,
     Five,
@@ -9,11 +11,26 @@ import {
     Team,
     User,
     UserInGameInfo,
-    UserStatistics,
-    Account,
-    AccountWithDeposit
+    UserStatistics
 } from "../generated/schema"
 import {typedMapToString} from "./utils"
+
+function deleteObjFromArray<T>(array: T[], str: T): T[] {
+    const index = array.indexOf(str)
+    if (index > -1) {
+        array = array.splice(index, 1)
+    }
+    return array
+}
+
+
+function addObjToArray<T>(array: T[] | null, obj: T): T[] {
+    if (array == null) {
+        array = new Array<T>()
+    }
+    array.push(obj)
+    return array
+}
 
 function getEventId(gameId: string, events_count: number): string {
     return gameId + (events_count + 1).toString()
@@ -181,8 +198,8 @@ export function handleReceipt(
             continue
         }
         const functionCall = actions[i].toFunctionCall();
-        if (functionCall.methodName == "start_game")
-            handleStartGame(actions[i], receiptWithOutcome)
+        if (functionCall.methodName == "make_available")
+            handleMakeAvailable(actions[i], receiptWithOutcome)
         else if (functionCall.methodName == "generate_event")
             handleGenerateEvent(actions[i], receiptWithOutcome)
         else if (functionCall.methodName == "register_account")
@@ -196,40 +213,52 @@ export function handleReceipt(
         else if (functionCall.methodName == "send_request_play")
             handleSendRequestPlayEvent(actions[i], receiptWithOutcome)
         else if (functionCall.methodName == "accept_request_play")
-            handleAcceptRequestPlayEvent(actions[i], receiptWithOutcome)
+            handleAcceptOrDeclineRequestPlayEvent(actions[i], receiptWithOutcome)
         else if (functionCall.methodName == "decline_request_play")
-            handleDeclineRequestPlayEvent(actions[i], receiptWithOutcome)
+            handleAcceptOrDeclineRequestPlayEvent(actions[i], receiptWithOutcome)
         else
             log.info("handleReceipt: Invalid method name: {}", [functionCall.methodName])
     }
 }
 
 
-function handleStartGame(
+function handleMakeAvailable (
     action: near.ActionValue,
     receiptWithOutcome: near.ReceiptWithOutcome
 ): void {
     // preparing and validating
     if (action.kind != near.ActionKind.FUNCTION_CALL) {
-        log.error("handleStartGame: action is not a function call", []);
+        log.error("handleMakeAvailable: action is not a function call", []);
         return;
     }
     const functionCall = action.toFunctionCall();
     const methodName = functionCall.methodName
 
-    if (!(methodName == "start_game")) {
-        log.error("handleStartGame: Invalid method name: {}", [methodName]);
+    if (!(methodName == "make_available")) {
+        log.error("handleMakeAvailable: Invalid method name: {}", [methodName]);
         return
     }
 
     // main logic
     const logs = receiptWithOutcome.outcome.logs
     if (logs.length == 0) {
-        log.error("handleStartGame: No logs", [])
+        const userId = receiptWithOutcome.receipt.signerId;
+        let user = User.load(userId)
+        if (!user) {
+            user = new User(userId)
+            user.games = new Array<string>()
+            const statistics1 = new UserStatistics(user.id)
+            initUserStatistics(statistics1)
+            user.statistics = statistics1.id
+            statistics1.save()
+        }
+        user.deposit = functionCall.deposit
+        user.is_available = true
+        user.save()
         return
     }
     if (logs.length != 1) {
-        log.error("handleStartGame: Invalid logs length: {}, Must be 1", [logs.length.toString()])
+        log.error("handleStartGame: Invalid logs length: {}, Must be empty or 1", [logs.length.toString()])
         return
     }
 
@@ -293,6 +322,9 @@ function handleStartGame(
 
     user1.is_available = false
     user2.is_available = false
+    user1.deposit = BigInt.fromI32(0)
+    user2.deposit = BigInt.fromI32(0)
+
     user1.save()
     user2.save()
 
@@ -300,7 +332,7 @@ function handleStartGame(
 }
 
 
-function handleGenerateEvent(
+function handleGenerateEvent (
     action: near.ActionValue,
     receiptWithOutcome: near.ReceiptWithOutcome
 ): void {
@@ -402,7 +434,7 @@ function handleGenerateEvent(
     game.save()
 }
 
-function handleRegisterAccountEvent(action: near.ActionValue, receiptWithOutcome: near.ReceiptWithOutcome) {
+function handleRegisterAccountEvent(action: near.ActionValue, receiptWithOutcome: near.ReceiptWithOutcome): void {
     if (action.kind != near.ActionKind.FUNCTION_CALL) {
         log.error("handleRegisterAccountEvent: action is not a function call", []);
         return;
@@ -425,29 +457,240 @@ function handleRegisterAccountEvent(action: near.ActionValue, receiptWithOutcome
         account.requests_play_received = new Array<string>()
         account.save()
     }
-
 }
 
-function handleSendFriendRequestEvent(action: near.ActionValue, receiptWithOutcome: near.ReceiptWithOutcome) {
+function handleSendFriendRequestEvent(action: near.ActionValue, receiptWithOutcome: near.ReceiptWithOutcome): void {
+    if (action.kind != near.ActionKind.FUNCTION_CALL) {
+        log.error("handleSendFriendRequestEvent: action is not a function call", []);
+        return;
+    }
+    const functionCall = action.toFunctionCall();
+    const methodName = functionCall.methodName
 
+    if (!(methodName == "send_friend_request")) {
+        log.error("handleSendFriendRequestEvent: Invalid method name: {}", [methodName]);
+        return
+    }
+
+    const outcome = receiptWithOutcome.outcome;
+    const args = json.fromString(functionCall.args.toString()).toObject()
+    // pub fn send_friend_request (&mut self, friend_id: &AccountId)
+    const friendId = args.get("friend_id")!.toString()
+    const account = Account.load(receiptWithOutcome.receipt.signerId) as Account
+    if (!account) {
+        log.error("handleSendFriendRequestEvent: Account not found", [])
+        return
+    }
+    const friend = Account.load(friendId) as Account
+    if (!friend) {
+        log.error("handleSendFriendRequestEvent: Friend not found", [])
+        return
+    }
+    if (account.sent_friend_requests.includes(friendId)) {
+        log.error("handleSendFriendRequestEvent: Friend request already sent", [])
+        return
+    }
+    account.sent_friend_requests = addObjToArray(account.sent_friend_requests, friendId)
+    friend.friend_requests_received = addObjToArray(friend.friend_requests_received, receiptWithOutcome.receipt.signerId)
+    account.save()
+    friend.save()
 }
 
-function handleAcceptFriendRequestEvent(action: near.ActionValue, receiptWithOutcome: near.ReceiptWithOutcome) {
+function handleAcceptFriendRequestEvent(action: near.ActionValue, receiptWithOutcome: near.ReceiptWithOutcome): void {
+    if (action.kind != near.ActionKind.FUNCTION_CALL) {
+        log.error("handleAcceptFriendRequestEvent: action is not a function call", []);
+        return;
+    }
+    const functionCall = action.toFunctionCall();
+    const methodName = functionCall.methodName
 
+    if (!(methodName == "accept_friend_request")) {
+        log.error("handleAcceptFriendRequestEvent: Invalid method name: {}", [methodName]);
+        return
+    }
+
+    const outcome = receiptWithOutcome.outcome;
+    const args = json.fromString(functionCall.args.toString()).toObject()
+    // pub fn accept_friend_request (&mut self, friend_id: &AccountId)
+    const friendId = args.get("friend_id")!.toString()
+    const account = Account.load(receiptWithOutcome.receipt.signerId) as Account
+    if (!account) {
+        log.error("handleAcceptFriendRequestEvent: Account not found", [])
+        return
+    }
+    const friend = Account.load(friendId) as Account
+    if (!friend) {
+        log.error("handleAcceptFriendRequestEvent: Friend not found", [])
+        return
+    }
+    if (!friend.sent_friend_requests.includes(friendId)) {
+        log.error("handleAcceptFriendRequestEvent: Friend request not sent", [])
+        return
+    }
+    friend.sent_friend_requests = deleteObjFromArray(friend.sent_friend_requests, account.id)
+    account.friends = addObjToArray(account.friends, friendId)
+    friend.friends = addObjToArray(friend.friends, account.id)
+    account.friend_requests_received = deleteObjFromArray(account.sent_friend_requests, account.id)
+    account.save()
+    friend.save()
 }
 
-function handleDeclineFriendRequestEvent(action: near.ActionValue, receiptWithOutcome: near.ReceiptWithOutcome) {
+function handleDeclineFriendRequestEvent(action: near.ActionValue, receiptWithOutcome: near.ReceiptWithOutcome): void {
+    if (action.kind != near.ActionKind.FUNCTION_CALL) {
+        log.error("handleDeclineFriendRequestEvent: action is not a function call", []);
+        return;
+    }
+    const functionCall = action.toFunctionCall();
+    const methodName = functionCall.methodName
 
+    if (!(methodName == "decline_friend_request")) {
+        log.error("handleDeclineFriendRequestEvent: Invalid method name: {}", [methodName]);
+        return
+    }
+
+    const outcome = receiptWithOutcome.outcome;
+    const args = json.fromString(functionCall.args.toString()).toObject()
+    // pub fn decline_friend_request (&mut self, friend_id: &AccountId)
+    const friendId = args.get("friend_id")!.toString()
+    const account = Account.load(receiptWithOutcome.receipt.signerId) as Account
+    if (!account) {
+        log.error("handleDeclineFriendRequestEvent: Account not found", [])
+        return
+    }
+    const friend = Account.load(friendId) as Account
+    if (!friend) {
+        log.error("handleDeclineFriendRequestEvent: Friend not found", [])
+        return
+    }
+    if (!friend.sent_friend_requests.includes(friendId)) {
+        log.error("handleDeclineFriendRequestEvent: Friend request not sent", [])
+        return
+    }
+    friend.sent_friend_requests = deleteObjFromArray(friend.sent_friend_requests, account.id)
+    account.friend_requests_received = deleteObjFromArray(account.friend_requests_received, friendId)
+    account.save()
+    friend.save()
 }
 
-function handleSendRequestPlayEvent(action: near.ActionValue, receiptWithOutcome: near.ReceiptWithOutcome) {
+function handleSendRequestPlayEvent(action: near.ActionValue, receiptWithOutcome: near.ReceiptWithOutcome): void {
+    if (action.kind != near.ActionKind.FUNCTION_CALL) {
+        log.error("handleSendRequestPlayEvent: action is not a function call", []);
+        return;
+    }
+    const functionCall = action.toFunctionCall();
+    const methodName = functionCall.methodName
 
+    if (!(methodName == "send_request_play")) {
+        log.error("handleSendRequestPlayEvent: Invalid method name: {}", [methodName]);
+        return
+    }
+
+    const outcome = receiptWithOutcome.outcome;
+    const args = json.fromString(functionCall.args.toString()).toObject()
+    // pub fn send_request_play (&mut self, friend_id: &AccountId)
+    const friendId = args.get("friend_id")!.toString()
+    const account = Account.load(receiptWithOutcome.receipt.signerId) as Account
+    if (!account) {
+        log.error("handleSendRequestPlayEvent: Account not found", [])
+        return
+    }
+    const friend = Account.load(friendId) as Account
+    if (!friend) {
+        log.error("handleSendRequestPlayEvent: Friend not found", [])
+        return
+    }
+    if (account.sent_requests_play.includes(friendId)) {
+        log.error("handleSendRequestPlayEvent: Request already sent", [])
+        return
+    }
+    let accountWithDeposit = AccountWithDeposit.load(account.id)
+    if (!accountWithDeposit) {
+        accountWithDeposit = new AccountWithDeposit(account.id)
+    }
+    accountWithDeposit.deposit = functionCall.deposit
+    account.sent_requests_play = addObjToArray(account.sent_requests_play, accountWithDeposit.id)
+    friend.requests_play_received = addObjToArray(friend.requests_play_received, accountWithDeposit.id)
+    account.save()
+    friend.save()
 }
 
-function handleAcceptRequestPlayEvent(action: near.ActionValue, receiptWithOutcome: near.ReceiptWithOutcome) {
+function handleAcceptOrDeclineRequestPlayEvent(action: near.ActionValue, receiptWithOutcome: near.ReceiptWithOutcome): void {
+    if (action.kind != near.ActionKind.FUNCTION_CALL) {
+        log.error("handleAcceptOrDeclineRequestPlayEvent: action is not a function call", []);
+        return;
+    }
+    const functionCall = action.toFunctionCall();
+    const methodName = functionCall.methodName
 
+    if (!(methodName == "accept_request_play") && !(methodName == "decline_request_play")) {
+        log.error("handleAcceptOrDeclineRequestPlayEvent: Invalid method name: {}", [methodName]);
+        return
+    }
+
+    const outcome = receiptWithOutcome.outcome;
+    const args = json.fromString(functionCall.args.toString()).toObject()
+    // pub fn accept_request_play (&mut self, friend_id: &AccountId)
+    const friendId = args.get("friend_id")!.toString()
+    const account = Account.load(receiptWithOutcome.receipt.signerId) as Account
+    if (!account) {
+        log.error("handleAcceptOrDeclineRequestPlayEvent: Account not found", [])
+        return
+    }
+    const friend = Account.load(friendId) as Account
+    if (!friend) {
+        log.error("handleAcceptOrDeclineRequestPlayEvent: Friend not found", [])
+        return
+    }
+    if (!friend.sent_requests_play.includes(friendId)) {
+        log.error("handleAcceptOrDeclineRequestPlayEvent: Request not sent", [])
+        return
+    }
+
+    let accountWithDeposit = AccountWithDeposit.load(account.id)
+    if (!accountWithDeposit) {
+        log.error("handleAcceptOrDeclineRequestPlayEvent: AccountWithDeposit not found", [])
+        return
+    }
+    friend.sent_requests_play = deleteObjFromArray(friend.sent_requests_play, accountWithDeposit.id)
+    account.requests_play_received = deleteObjFromArray(account.requests_play_received, accountWithDeposit.id)
+    store.remove("AccountWithDeposit", accountWithDeposit.id)
+    account.save()
+    friend.save()
 }
 
-function handleDeclineRequestPlayEvent(action: near.ActionValue, receiptWithOutcome: near.ReceiptWithOutcome) {
-
-}
+// function handleDeclineRequestPlayEvent(action: near.ActionValue, receiptWithOutcome: near.ReceiptWithOutcome): void {
+//     if (action.kind != near.ActionKind.FUNCTION_CALL) {
+//         log.error("handleDeclineRequestPlayEvent: action is not a function call", []);
+//         return;
+//     }
+//     const functionCall = action.toFunctionCall();
+//     const methodName = functionCall.methodName
+//
+//     if (!(methodName == "decline_request_play")) {
+//         log.error("handleDeclineRequestPlayEvent: Invalid method name: {}", [methodName]);
+//         return
+//     }
+//
+//     const outcome = receiptWithOutcome.outcome;
+//     const args = json.fromString(functionCall.args.toString()).toObject()
+//     // pub fn decline_request_play (&mut self, friend_id: &AccountId)
+//     const friendId = args.get("friend_id")!.toString()
+//     const account = Account.load(receiptWithOutcome.receipt.signerId) as Account
+//     if (!account) {
+//         log.error("handleDeclineRequestPlayEvent: Account not found", [])
+//         return
+//     }
+//     const friend = Account.load(friendId) as Account
+//     if (!friend) {
+//         log.error("handleDeclineRequestPlayEvent: Friend not found", [])
+//         return
+//     }
+//     if (!friend.sent_requests_play.includes(friendId)) {
+//         log.error("handleDeclineRequestPlayEvent: Request not sent", [])
+//         return
+//     }
+//     friend.sent_requests_play = deleteObjFromArray(friend.sent_requests_play, account.id)
+//     account.requests_play_received = deleteObjFromArray(account.requests_play_received, friendId)
+//     account.save()
+//     friend.save()
+// }
