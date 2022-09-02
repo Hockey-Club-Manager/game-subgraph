@@ -6,8 +6,8 @@ dataSources:
     name: Game contract
     network: near-testnet
     source:
-      account: parh.testnet
-      startBlock: 95212323
+      account: new_game.parh.testnet
+      startBlock: 99039174
     mapping:
       apiVersion: 0.0.6
       language: wasm/assemblyscript
