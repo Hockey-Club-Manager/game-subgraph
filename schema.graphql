@@ -4,13 +4,9 @@ type User @entity {
     statistics: UserStatistics!
     games: [Game!]!
     deposit: BigInt
-}
-
-type Account @entity {
-    id: ID!  # user_id (AccountId)
-    friends: [Account!]!
-    sent_friend_requests: [Account!]!
-    friend_requests_received: [Account!]!
+    friends: [User!]!
+    sent_friend_requests: [User!]!
+    friend_requests_received: [User!]!
     sent_requests_play: [AccountWithDeposit!]!
     requests_play_received: [AccountWithDeposit!]!
 }

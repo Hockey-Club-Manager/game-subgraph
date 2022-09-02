@@ -1,6 +1,5 @@
 import {BigDecimal, BigInt, json, JSONValue, log, near, store, TypedMap} from "@graphprotocol/graph-ts"
 import {
-    Account,
     AccountWithDeposit,
     Event,
     FieldPlayer,
@@ -251,6 +250,11 @@ function handleMakeAvailable (
             initUserStatistics(statistics1)
             user.statistics = statistics1.id
             statistics1.save()
+            user.friend_requests_received = new Array<string>()
+            user.sent_friend_requests = new Array<string>()
+            user.friends = new Array<string>()
+            user.sent_requests_play = new Array<string>()
+            user.requests_play_received = new Array<string>()
         }
         user.deposit = functionCall.deposit
         user.is_available = true
@@ -324,6 +328,18 @@ function handleMakeAvailable (
     user2.is_available = false
     user1.deposit = BigInt.fromI32(0)
     user2.deposit = BigInt.fromI32(0)
+
+    user1.friend_requests_received = new Array<string>()
+    user1.sent_friend_requests = new Array<string>()
+    user1.friends = new Array<string>()
+    user1.sent_requests_play = new Array<string>()
+    user1.requests_play_received = new Array<string>()
+
+    user2.friend_requests_received = new Array<string>()
+    user2.sent_friend_requests = new Array<string>()
+    user2.friends = new Array<string>()
+    user2.sent_requests_play = new Array<string>()
+    user2.requests_play_received = new Array<string>()
 
     user1.save()
     user2.save()
@@ -447,9 +463,16 @@ function handleRegisterAccountEvent(action: near.ActionValue, receiptWithOutcome
         return
     }
 
-    let account = Account.load(receiptWithOutcome.receipt.signerId)
+    let account = User.load(receiptWithOutcome.receipt.signerId)
     if (!account) {
-        account = new Account(receiptWithOutcome.receipt.signerId)
+        account = new User(receiptWithOutcome.receipt.signerId)
+        account.is_available = false;
+        const statistics = new UserStatistics(account.id)
+        initUserStatistics(statistics)
+        account.statistics = statistics.id
+        statistics.save()
+        account.deposit = BigInt.fromI32(0)
+        account.games = new Array<string>()
         account.friend_requests_received = new Array<string>()
         account.sent_friend_requests = new Array<string>()
         account.friends = new Array<string>()
@@ -476,12 +499,12 @@ function handleSendFriendRequestEvent(action: near.ActionValue, receiptWithOutco
     const args = json.fromString(functionCall.args.toString()).toObject()
     // pub fn send_friend_request (&mut self, friend_id: &AccountId)
     const friendId = args.get("friend_id")!.toString()
-    const account = Account.load(receiptWithOutcome.receipt.signerId) as Account
+    const account = User.load(receiptWithOutcome.receipt.signerId)
     if (!account) {
-        log.error("handleSendFriendRequestEvent: Account not found", [])
+        log.error("handleSendFriendRequestEvent: User not found", [])
         return
     }
-    const friend = Account.load(friendId) as Account
+    const friend = User.load(friendId)
     if (!friend) {
         log.error("handleSendFriendRequestEvent: Friend not found", [])
         return
@@ -513,12 +536,12 @@ function handleAcceptFriendRequestEvent(action: near.ActionValue, receiptWithOut
     const args = json.fromString(functionCall.args.toString()).toObject()
     // pub fn accept_friend_request (&mut self, friend_id: &AccountId)
     const friendId = args.get("friend_id")!.toString()
-    const account = Account.load(receiptWithOutcome.receipt.signerId) as Account
+    const account = User.load(receiptWithOutcome.receipt.signerId)
     if (!account) {
-        log.error("handleAcceptFriendRequestEvent: Account not found", [])
+        log.error("handleAcceptFriendRequestEvent: User not found", [])
         return
     }
-    const friend = Account.load(friendId) as Account
+    const friend = User.load(friendId)
     if (!friend) {
         log.error("handleAcceptFriendRequestEvent: Friend not found", [])
         return
@@ -552,12 +575,12 @@ function handleDeclineFriendRequestEvent(action: near.ActionValue, receiptWithOu
     const args = json.fromString(functionCall.args.toString()).toObject()
     // pub fn decline_friend_request (&mut self, friend_id: &AccountId)
     const friendId = args.get("friend_id")!.toString()
-    const account = Account.load(receiptWithOutcome.receipt.signerId) as Account
+    const account = User.load(receiptWithOutcome.receipt.signerId)
     if (!account) {
-        log.error("handleDeclineFriendRequestEvent: Account not found", [])
+        log.error("handleDeclineFriendRequestEvent: User not found", [])
         return
     }
-    const friend = Account.load(friendId) as Account
+    const friend = User.load(friendId)
     if (!friend) {
         log.error("handleDeclineFriendRequestEvent: Friend not found", [])
         return
@@ -589,12 +612,12 @@ function handleSendRequestPlayEvent(action: near.ActionValue, receiptWithOutcome
     const args = json.fromString(functionCall.args.toString()).toObject()
     // pub fn send_request_play (&mut self, friend_id: &AccountId)
     const friendId = args.get("friend_id")!.toString()
-    const account = Account.load(receiptWithOutcome.receipt.signerId) as Account
+    const account = User.load(receiptWithOutcome.receipt.signerId)
     if (!account) {
-        log.error("handleSendRequestPlayEvent: Account not found", [])
+        log.error("handleSendRequestPlayEvent: User not found", [])
         return
     }
-    const friend = Account.load(friendId) as Account
+    const friend = User.load(friendId)
     if (!friend) {
         log.error("handleSendRequestPlayEvent: Friend not found", [])
         return
@@ -631,12 +654,12 @@ function handleAcceptOrDeclineRequestPlayEvent(action: near.ActionValue, receipt
     const args = json.fromString(functionCall.args.toString()).toObject()
     // pub fn accept_request_play (&mut self, friend_id: &AccountId)
     const friendId = args.get("friend_id")!.toString()
-    const account = Account.load(receiptWithOutcome.receipt.signerId) as Account
+    const account = User.load(receiptWithOutcome.receipt.signerId)
     if (!account) {
-        log.error("handleAcceptOrDeclineRequestPlayEvent: Account not found", [])
+        log.error("handleAcceptOrDeclineRequestPlayEvent: User not found", [])
         return
     }
-    const friend = Account.load(friendId) as Account
+    const friend = User.load(friendId)
     if (!friend) {
         log.error("handleAcceptOrDeclineRequestPlayEvent: Friend not found", [])
         return
@@ -675,12 +698,12 @@ function handleAcceptOrDeclineRequestPlayEvent(action: near.ActionValue, receipt
 //     const args = json.fromString(functionCall.args.toString()).toObject()
 //     // pub fn decline_request_play (&mut self, friend_id: &AccountId)
 //     const friendId = args.get("friend_id")!.toString()
-//     const account = Account.load(receiptWithOutcome.receipt.signerId) as Account
+//     const account = User.load(receiptWithOutcome.receipt.signerId) as User
 //     if (!account) {
-//         log.error("handleDeclineRequestPlayEvent: Account not found", [])
+//         log.error("handleDeclineRequestPlayEvent: User not found", [])
 //         return
 //     }
-//     const friend = Account.load(friendId) as Account
+//     const friend = User.load(friendId) as User
 //     if (!friend) {
 //         log.error("handleDeclineRequestPlayEvent: Friend not found", [])
 //         return
