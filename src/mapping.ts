@@ -585,12 +585,16 @@ function handleDeclineFriendRequestEvent(action: near.ActionValue, receiptWithOu
         log.error("handleDeclineFriendRequestEvent: Friend not found", [])
         return
     }
-    if (!friend.sent_friend_requests.includes(friendId)) {
+    if (friend.sent_friend_requests.includes(friendId)) {
+        friend.sent_friend_requests = deleteObjFromArray(friend.sent_friend_requests, account.id)
+        account.friend_requests_received = deleteObjFromArray(account.friend_requests_received, friendId)
+    } else if (account.sent_friend_requests.includes(friendId)) {
+        friend.friend_requests_received = deleteObjFromArray(friend.friend_requests_received, account.id)
+        account.sent_friend_requests = deleteObjFromArray(account.sent_friend_requests, friendId)
+    } else {
         log.error("handleDeclineFriendRequestEvent: Friend request not sent", [])
         return
     }
-    friend.sent_friend_requests = deleteObjFromArray(friend.sent_friend_requests, account.id)
-    account.friend_requests_received = deleteObjFromArray(account.friend_requests_received, friendId)
     account.save()
     friend.save()
 }
@@ -664,19 +668,29 @@ function handleAcceptOrDeclineRequestPlayEvent(action: near.ActionValue, receipt
         log.error("handleAcceptOrDeclineRequestPlayEvent: Friend not found", [])
         return
     }
-    if (!friend.sent_requests_play.includes(friendId)) {
+    let accountWithDeposit: AccountWithDeposit | null;
+    if (friend.sent_requests_play.includes(account.id)) {
+        accountWithDeposit = AccountWithDeposit.load(account.id)
+        if (!accountWithDeposit) {
+            log.error("handleAcceptOrDeclineRequestPlayEvent: AccountWithDeposit not found", [])
+            return
+        }
+        friend.sent_requests_play = deleteObjFromArray(friend.sent_requests_play, accountWithDeposit.id)
+        account.requests_play_received = deleteObjFromArray(account.requests_play_received, accountWithDeposit.id)
+        store.remove("AccountWithDeposit", accountWithDeposit.id)
+    } else if (account.sent_requests_play.includes(friendId)) {
+        accountWithDeposit = AccountWithDeposit.load(friendId)
+        if (!accountWithDeposit) {
+            log.error("handleAcceptOrDeclineRequestPlayEvent: AccountWithDeposit not found", [])
+            return
+        }
+        friend.requests_play_received = deleteObjFromArray(friend.requests_play_received, accountWithDeposit.id)
+        account.sent_requests_play = deleteObjFromArray(account.sent_requests_play, accountWithDeposit.id)
+        store.remove("AccountWithDeposit", accountWithDeposit.id)
+    } else {
         log.error("handleAcceptOrDeclineRequestPlayEvent: Request not sent", [])
         return
     }
-
-    let accountWithDeposit = AccountWithDeposit.load(account.id)
-    if (!accountWithDeposit) {
-        log.error("handleAcceptOrDeclineRequestPlayEvent: AccountWithDeposit not found", [])
-        return
-    }
-    friend.sent_requests_play = deleteObjFromArray(friend.sent_requests_play, accountWithDeposit.id)
-    account.requests_play_received = deleteObjFromArray(account.requests_play_received, accountWithDeposit.id)
-    store.remove("AccountWithDeposit", accountWithDeposit.id)
     account.save()
     friend.save()
 }
