@@ -17,7 +17,7 @@ import {typedMapToString} from "./utils"
 function deleteObjFromArray<T>(array: T[], str: T): T[] {
     const index = array.indexOf(str)
     if (index > -1) {
-        array = array.splice(index, 1)
+        array.splice(index, 1)
     }
     return array
 }
