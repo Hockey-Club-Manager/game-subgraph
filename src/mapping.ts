@@ -215,6 +215,9 @@ export function handleReceipt(
             handleAcceptOrDeclineRequestPlayEvent(actions[i], receiptWithOutcome)
         else if (functionCall.methodName == "decline_request_play")
             handleAcceptOrDeclineRequestPlayEvent(actions[i], receiptWithOutcome)
+        else if (functionCall.methodName == "remove_friend") {
+            handleRemoveFriendEvent(actions[i], receiptWithOutcome)
+        }
         else
             log.info("handleReceipt: Invalid method name: {}", [functionCall.methodName])
     }
@@ -546,7 +549,7 @@ function handleAcceptFriendRequestEvent(action: near.ActionValue, receiptWithOut
         log.error("handleAcceptFriendRequestEvent: Friend not found", [])
         return
     }
-    if (!friend.sent_friend_requests.includes(friendId)) {
+    if (!friend.sent_friend_requests.includes(account.id)) {
         log.error("handleAcceptFriendRequestEvent: Friend request not sent", [])
         return
     }
@@ -585,7 +588,8 @@ function handleDeclineFriendRequestEvent(action: near.ActionValue, receiptWithOu
         log.error("handleDeclineFriendRequestEvent: Friend not found", [])
         return
     }
-    if (friend.sent_friend_requests.includes(friendId)) {
+    if (friend.sent_friend_requests.includes(account.id)) {
+        log.warning("Declining", [])
         friend.sent_friend_requests = deleteObjFromArray(friend.sent_friend_requests, account.id)
         account.friend_requests_received = deleteObjFromArray(account.friend_requests_received, friendId)
     } else if (account.sent_friend_requests.includes(friendId)) {
@@ -635,10 +639,13 @@ function handleSendRequestPlayEvent(action: near.ActionValue, receiptWithOutcome
         accountWithDeposit = new AccountWithDeposit(account.id)
     }
     accountWithDeposit.deposit = functionCall.deposit
+    accountWithDeposit.from = account.id
+    accountWithDeposit.to = friendId
     account.sent_requests_play = addObjToArray(account.sent_requests_play, accountWithDeposit.id)
     friend.requests_play_received = addObjToArray(friend.requests_play_received, accountWithDeposit.id)
     account.save()
     friend.save()
+    accountWithDeposit.save()
 }
 
 function handleAcceptOrDeclineRequestPlayEvent(action: near.ActionValue, receiptWithOutcome: near.ReceiptWithOutcome): void {
@@ -679,6 +686,10 @@ function handleAcceptOrDeclineRequestPlayEvent(action: near.ActionValue, receipt
         account.requests_play_received = deleteObjFromArray(account.requests_play_received, accountWithDeposit.id)
         store.remove("AccountWithDeposit", accountWithDeposit.id)
     } else if (account.sent_requests_play.includes(friendId)) {
+        if (methodName == "accept_request_play") {
+            log.error("handleAcceptOrDeclineRequestPlayEvent: You can't accept your own request", [])
+            return
+        }
         accountWithDeposit = AccountWithDeposit.load(friendId)
         if (!accountWithDeposit) {
             log.error("handleAcceptOrDeclineRequestPlayEvent: AccountWithDeposit not found", [])
@@ -731,3 +742,40 @@ function handleAcceptOrDeclineRequestPlayEvent(action: near.ActionValue, receipt
 //     account.save()
 //     friend.save()
 // }
+
+function handleRemoveFriendEvent(action: near.ActionValue, receiptWithOutcome: near.ReceiptWithOutcome): void {
+    if (action.kind != near.ActionKind.FUNCTION_CALL) {
+        log.error("handleRemoveFriendEvent: action is not a function call", []);
+        return;
+    }
+    const functionCall = action.toFunctionCall();
+    const methodName = functionCall.methodName
+
+    if (!(methodName == "send_friend_request")) {
+        log.error("handleRemoveFriendEvent: Invalid method name: {}", [methodName]);
+        return
+    }
+
+    const outcome = receiptWithOutcome.outcome;
+    const args = json.fromString(functionCall.args.toString()).toObject()
+    // pub fn send_friend_request (&mut self, friend_id: &AccountId)
+    const friendId = args.get("friend_id")!.toString()
+    const account = User.load(receiptWithOutcome.receipt.signerId)
+    if (!account) {
+        log.error("handleRemoveFriendEvent: User not found", [])
+        return
+    }
+    const friend = User.load(friendId)
+    if (!friend) {
+        log.error("handleRemoveFriendEvent: Friend not found", [])
+        return
+    }
+    if (!account.friends.includes(friendId)) {
+        log.error("handleRemoveFriendEvent: Friend not added", [])
+        return
+    }
+    account.friends = deleteObjFromArray(account.friends, friendId)
+    friend.friends = deleteObjFromArray(friend.friends, account.id)
+    account.save()
+    friend.save()
+}

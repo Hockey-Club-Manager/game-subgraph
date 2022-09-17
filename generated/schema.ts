@@ -173,6 +173,24 @@ export class AccountWithDeposit extends Entity {
   set deposit(value: BigInt) {
     this.set("deposit", Value.fromBigInt(value));
   }
+
+  get from(): string {
+    let value = this.get("from");
+    return value!.toString();
+  }
+
+  set from(value: string) {
+    this.set("from", Value.fromString(value));
+  }
+
+  get to(): string {
+    let value = this.get("to");
+    return value!.toString();
+  }
+
+  set to(value: string) {
+    this.set("to", Value.fromString(value));
+  }
 }
 
 export class UserStatistics extends Entity {
