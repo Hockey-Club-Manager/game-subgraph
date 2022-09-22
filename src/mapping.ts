@@ -52,6 +52,10 @@ function getPlayerId(tokenId: string, gameId: string): string {
     return `${tokenId}_${gameId}`
 }
 
+function getAccountWithDepositId(accountId: string, friendId: string): string {
+    return `${accountId}|${friendId}`
+}
+
 function updateUserInGameInfo(userInGameInfo: UserInGameInfo, userInGameInfoData: TypedMap<string, JSONValue>, gameId: string): void {
     // field "user" must be set before calling this function
     const userId = userInGameInfoData.get("user_id")!.toI64() as number
@@ -630,13 +634,13 @@ function handleSendRequestPlayEvent(action: near.ActionValue, receiptWithOutcome
         log.error("handleSendRequestPlayEvent: Friend not found", [])
         return
     }
-    if (account.sent_requests_play.includes(friendId)) {
+    if (account.sent_requests_play.includes(getAccountWithDepositId(account.id, friendId)) || friend.sent_requests_play.includes(getAccountWithDepositId(friendId, account.id))) {
         log.error("handleSendRequestPlayEvent: Request already sent", [])
         return
     }
-    let accountWithDeposit = AccountWithDeposit.load(account.id)
+    let accountWithDeposit = AccountWithDeposit.load(getAccountWithDepositId(account.id, friendId))
     if (!accountWithDeposit) {
-        accountWithDeposit = new AccountWithDeposit(account.id)
+        accountWithDeposit = new AccountWithDeposit(getAccountWithDepositId(account.id, friendId))
     }
     accountWithDeposit.deposit = functionCall.deposit
     accountWithDeposit.from = account.id
@@ -676,8 +680,8 @@ function handleAcceptOrDeclineRequestPlayEvent(action: near.ActionValue, receipt
         return
     }
     let accountWithDeposit: AccountWithDeposit | null;
-    if (friend.sent_requests_play.includes(account.id)) {
-        accountWithDeposit = AccountWithDeposit.load(account.id)
+    if (account.requests_play_received.includes(getAccountWithDepositId(friendId, account.id))) {
+        accountWithDeposit = AccountWithDeposit.load(getAccountWithDepositId(friendId, account.id))
         if (!accountWithDeposit) {
             log.error("handleAcceptOrDeclineRequestPlayEvent: AccountWithDeposit not found", [])
             return
@@ -685,12 +689,12 @@ function handleAcceptOrDeclineRequestPlayEvent(action: near.ActionValue, receipt
         friend.sent_requests_play = deleteObjFromArray(friend.sent_requests_play, accountWithDeposit.id)
         account.requests_play_received = deleteObjFromArray(account.requests_play_received, accountWithDeposit.id)
         store.remove("AccountWithDeposit", accountWithDeposit.id)
-    } else if (account.sent_requests_play.includes(friendId)) {
+    } else if (account.sent_requests_play.includes(getAccountWithDepositId(account.id, friendId))) {
         if (methodName == "accept_request_play") {
             log.error("handleAcceptOrDeclineRequestPlayEvent: You can't accept your own request", [])
             return
         }
-        accountWithDeposit = AccountWithDeposit.load(friendId)
+        accountWithDeposit = AccountWithDeposit.load(getAccountWithDepositId(account.id, friendId))
         if (!accountWithDeposit) {
             log.error("handleAcceptOrDeclineRequestPlayEvent: AccountWithDeposit not found", [])
             return
