@@ -44,7 +44,7 @@ type Game @entity {
 
 type Event @entity {
     id: ID!  # id is game_id + _ + generated events count. Examples: 54_1, 54_2
-    player_with_puck: String!
+    player_with_puck: String! # FieldPlayer
     action: String!
     zone_number: Int!
     time: BigInt!
@@ -90,6 +90,7 @@ type UserInGameInfo @entity {
 
 type FieldPlayer @entity {
     id: ID!  # id of NFT + _ + game_id
+    user_in_game_info: UserInGameInfo!
     img: String
     name: String
     teamwork: BigDecimal

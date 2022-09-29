@@ -78,6 +78,7 @@ function updateUserInGameInfo(userInGameInfo: UserInGameInfo, userInGameInfoData
         let fieldPlayer = FieldPlayer.load(getPlayerId(fieldPlayersData.entries[i].key, gameId))
         if (!fieldPlayer) {
             fieldPlayer = new FieldPlayer(getPlayerId(fieldPlayersData.entries[i].key, gameId))
+            fieldPlayer.user_in_game_info = userInGameInfo.id
         }
         if (fieldPlayersData.get(fieldPlayersData.entries[i].key)!.toObject().get("img") == null)
             fieldPlayer.img = null
@@ -203,6 +204,8 @@ export function handleReceipt(
         const functionCall = actions[i].toFunctionCall();
         if (functionCall.methodName == "make_available")
             handleMakeAvailable(actions[i], receiptWithOutcome)
+        if (functionCall.methodName == "make_unavailable")
+            handleMakeUnavailable(actions[i], receiptWithOutcome)
         else if (functionCall.methodName == "generate_event")
             handleGenerateEvent(actions[i], receiptWithOutcome)
         else if (functionCall.methodName == "register_account")
@@ -227,6 +230,29 @@ export function handleReceipt(
     }
 }
 
+function handleMakeUnavailable(action: near.ActionValue, receiptWithOutcome: near.ReceiptWithOutcome): void {
+    // preparing and validating
+    if (action.kind != near.ActionKind.FUNCTION_CALL) {
+        log.error("handleMakeUnavailable: action is not a function call", []);
+        return;
+    }
+    const functionCall = action.toFunctionCall();
+    const methodName = functionCall.methodName
+
+    if (!(methodName == "make_unavailable")) {
+        log.error("handleMakeUnavailable: Invalid method name: {}", [methodName]);
+        return
+    }
+    const userId = receiptWithOutcome.receipt.signerId;
+    if (!User.load(userId)) {
+        log.error("handleMakeUnavailable: User is not registered", []);
+        return
+    }
+    const user = User.load(userId)!
+    user.deposit = BigInt.fromI32(0)
+    user.is_available = false
+    user.save()
+}
 
 function handleMakeAvailable (
     action: near.ActionValue,
@@ -269,10 +295,14 @@ function handleMakeAvailable (
         return
     }
     if (logs.length != 1) {
-        log.error("handleStartGame: Invalid logs length: {}, Must be empty or 1", [logs.length.toString()])
+        log.error("handleMakeAvailable: Invalid logs length: {}, Must be empty or 1", [logs.length.toString()])
         return
     }
 
+    if (json.try_fromString(logs[0]).error == true) {
+        log.error("handleMakeAvailable: Invalid logs: {}", [logs[0]])
+        return
+    }
     const logData = json.fromString(logs[0]).toObject()
     const gameData = (logData.get("game") as JSONValue).toObject()
     let game = new Game((gameData.get("game_id") as JSONValue).toString())
@@ -300,11 +330,12 @@ function handleMakeAvailable (
     }
 
     // creating UserInGameInfo for both users
-    const user1InGameInfo = new UserInGameInfo(user1.id)
+    const user1InGameInfo = new UserInGameInfo(getUserInGameInfoId(user1.id, game.id))
     user1InGameInfo.user = user1.id
     updateUserInGameInfo(user1InGameInfo, (gameData.get("user1") as JSONValue).toObject(), game.id)
-    const user2InGameInfo = new UserInGameInfo(user2.id)
+    const user2InGameInfo = new UserInGameInfo(getUserInGameInfoId(user2.id, game.id))
     user2InGameInfo.user = user2.id
+    updateUserInGameInfo(user1InGameInfo, (gameData.get("user2") as JSONValue).toObject(), game.id)
 
 
     // setting necessary game's fields
@@ -423,7 +454,6 @@ function handleGenerateEvent (
     event.save()
 
     // updating game
-    // let gameEvents = game.events != null ? game.events: new Array<string>()
     let gameEvents = game.events
     if (!gameEvents) {
         gameEvents = new Array<string>()
@@ -432,6 +462,27 @@ function handleGenerateEvent (
     game.events = gameEvents
     game.turns += 1
     game.last_event_generation_time = event.time
+
+    if (event.action == "Goal") {
+        const fieldPlayerWithPuck = FieldPlayer.load(getPlayerId(eventData.get("player_with_puck")!.toArray()[1].toString(), game.id))!
+        let winner: UserInGameInfo
+        let loser: UserInGameInfo
+        if (fieldPlayerWithPuck.user_in_game_info == userInGameInfo1.id) {
+            winner = userInGameInfo1
+            loser = userInGameInfo2
+        } else {
+            winner = userInGameInfo2
+            loser = userInGameInfo1
+        }
+        const userShotGoal = User.load(winner.user)!;
+        const statisticsWinner = UserStatistics.load(userShotGoal.statistics)!
+        statisticsWinner.total_goals += 1
+        statisticsWinner.save()
+        const userMissedGoal = User.load(loser.user)!
+        const statisticsLooser = UserStatistics.load(userMissedGoal.statistics)!
+        statisticsLooser.total_misses += 1
+        statisticsLooser.save()
+    }
 
     // if game finished
     if (event.action == "GameFinished") {

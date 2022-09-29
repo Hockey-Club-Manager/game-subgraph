@@ -833,6 +833,15 @@ export class FieldPlayer extends Entity {
     this.set("id", Value.fromString(value));
   }
 
+  get user_in_game_info(): string {
+    let value = this.get("user_in_game_info");
+    return value!.toString();
+  }
+
+  set user_in_game_info(value: string) {
+    this.set("user_in_game_info", Value.fromString(value));
+  }
+
   get img(): string | null {
     let value = this.get("img");
     if (!value || value.kind == ValueKind.NULL) {
