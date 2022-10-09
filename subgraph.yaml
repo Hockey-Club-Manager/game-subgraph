@@ -6,7 +6,7 @@ dataSources:
     name: Game contract
     network: near-testnet
     source:
-      account: new_game.parh.testnet
+      account: meta_game.parh.testnet
       startBlock: 99039174
     mapping:
       apiVersion: 0.0.6
