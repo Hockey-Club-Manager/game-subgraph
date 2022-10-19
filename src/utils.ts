@@ -1,4 +1,4 @@
-import {JSONValue, TypedMap, JSONValueKind, ValueKind, Value} from "@graphprotocol/graph-ts";
+import {JSONValue, TypedMap, JSONValueKind, ValueKind, Value, log} from "@graphprotocol/graph-ts";
 
 export function typedMapToString(typedMap: TypedMap<string, JSONValue>): string {
     let string = "{"
@@ -19,13 +19,12 @@ export function typedMapToString(typedMap: TypedMap<string, JSONValue>): string 
                 stringValue = value.toBool().toString()
                 break
             case JSONValueKind.NUMBER:
-                stringValue = value.toF64().toString()
+                stringValue = value.toI64().toString()
         }
 
         if (typedMap.entries[i].value.isNull())
             stringValue = "null"
-        else stringValue = typedMap.entries[i].value.toString()
-        string += `"${typedMap.entries[i].key}": ${stringValue}`
+        string += `"${typedMap.entries[i].key}": ${stringValue!}`
         if (i != typedMap.entries.length - 1)
             string += ", "
     }

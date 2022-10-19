@@ -109,7 +109,7 @@ type FieldPlayer @entity {
 }
 
 type Goalie @entity {
-    id: ID!  # id of NFT + _ + game_id
+    id: ID!  # goalie_number + _ + user_id + _ + game_id
     img: String
     name: String
     goalie_number: String!  # MainGoalkeeper or SubstituteGoalkeeper
