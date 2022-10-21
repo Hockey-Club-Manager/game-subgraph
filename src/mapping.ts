@@ -32,7 +32,7 @@ function addObjToArray<T>(array: T[] | null, obj: T): T[] {
 }
 
 function getEventId(gameId: string, events_count: number): string {
-    return gameId + (events_count + 1).toString()
+    return `${gameId}_${Math.round(events_count + 1).toString()}`
 }
 
 function getPlayerOnPositionId(fiveId: string, position: string): string {
@@ -455,8 +455,10 @@ function handleGenerateEvent (
         let event: Event;
         if (game.events) {
             event = new Event(getEventId(gameId.toString(), game.events!.length))
+            event.event_number = game.events!.length + 1
         } else {
             event = new Event(getEventId(gameId.toString(), 0))
+            event.event_number = 0
         }
         if (!eventData.get("player_with_puck")!.isNull())
             event.player_with_puck = getPlayerId(eventData.get("player_with_puck")!.toArray()[1].toString(), game.id)

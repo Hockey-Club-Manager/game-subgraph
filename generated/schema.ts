@@ -447,6 +447,15 @@ export class Event extends Entity {
     this.set("id", Value.fromString(value));
   }
 
+  get event_number(): i32 {
+    let value = this.get("event_number");
+    return value!.toI32();
+  }
+
+  set event_number(value: i32) {
+    this.set("event_number", Value.fromI32(value));
+  }
+
   get player_with_puck(): string | null {
     let value = this.get("player_with_puck");
     if (!value || value.kind == ValueKind.NULL) {
