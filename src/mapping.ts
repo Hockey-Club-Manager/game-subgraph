@@ -458,7 +458,9 @@ function handleGenerateEvent (
         } else {
             event = new Event(getEventId(gameId.toString(), 0))
         }
-        event.player_with_puck = getPlayerId(eventData.get("player_with_puck")!.toArray()[1].toString(), game.id)
+        if (!eventData.get("player_with_puck")!.isNull())
+            event.player_with_puck = getPlayerId(eventData.get("player_with_puck")!.toArray()[1].toString(), game.id)
+        else event.player_with_puck = null
         event.action = eventData.get("action")!.toString()
         event.zone_number = eventData.get("zone_number")!.toI64() as i32
         event.time = eventData.get("time")!.toBigInt()

@@ -44,7 +44,7 @@ type Game @entity {
 
 type Event @entity {
     id: ID!  # id is game_id + _ + generated events count. Examples: 54_1, 54_2
-    player_with_puck: String! # FieldPlayer
+    player_with_puck: FieldPlayer
     action: String!
     zone_number: Int!
     time: BigInt!

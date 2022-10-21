@@ -447,13 +447,21 @@ export class Event extends Entity {
     this.set("id", Value.fromString(value));
   }
 
-  get player_with_puck(): string {
+  get player_with_puck(): string | null {
     let value = this.get("player_with_puck");
-    return value!.toString();
+    if (!value || value.kind == ValueKind.NULL) {
+      return null;
+    } else {
+      return value.toString();
+    }
   }
 
-  set player_with_puck(value: string) {
-    this.set("player_with_puck", Value.fromString(value));
+  set player_with_puck(value: string | null) {
+    if (!value) {
+      this.unset("player_with_puck");
+    } else {
+      this.set("player_with_puck", Value.fromString(<string>value));
+    }
   }
 
   get action(): string {
