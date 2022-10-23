@@ -32,7 +32,8 @@ function addObjToArray<T>(array: T[] | null, obj: T): T[] {
 }
 
 function getEventId(gameId: string, events_count: number): string {
-    return `${gameId}_${Math.round(events_count + 1).toString()}`
+    const eventsCountPlusOne = events_count + 1 as i32
+    return `${gameId}_${eventsCountPlusOne}`
 }
 
 function getPlayerOnPositionId(fiveId: string, position: string): string {
@@ -62,7 +63,7 @@ function getAccountWithDepositId(accountId: string, friendId: string): string {
 
 function updateUserInGameInfo(userInGameInfo: UserInGameInfo, userInGameInfoData: TypedMap<string, JSONValue>, gameId: string): void {
     // field "user" must be set before calling this function
-    const userId = userInGameInfoData.get("user_id")!.toI64() as number
+    const userId = userInGameInfoData.get("user_id")!.toI64()
     userInGameInfo.take_to_called = (userInGameInfoData.get("take_to_called") as JSONValue).toBool()
     userInGameInfo.coach_speech_called = (userInGameInfoData.get("coach_speech_called") as JSONValue).toBool()
     userInGameInfo.is_goalie_out = (userInGameInfoData.get("is_goalie_out") as JSONValue).toBool()
@@ -136,6 +137,7 @@ function updateUserInGameInfo(userInGameInfo: UserInGameInfo, userInGameInfoData
         five.ice_time_priority = fiveData.get("ice_time_priority")!.toString()
         five.tactic = fiveData.get("tactic")!.toString()
         five.time_field = fiveData.get("time_field")!.toI64() as i32
+        five.save()
 
         fives.push(five.id)
     }
