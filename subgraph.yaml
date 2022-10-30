@@ -7,7 +7,7 @@ dataSources:
     network: near-testnet
     source:
       account: game_meta_new.parh.testnet
-      startBlock: 102942738
+      startBlock: 103886220
     mapping:
       apiVersion: 0.0.6
       language: wasm/assemblyscript
