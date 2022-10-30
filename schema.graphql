@@ -11,6 +11,14 @@ type User @entity {
     requests_play_received: [AccountWithDeposit!]!
 }
 
+type TeamLogo @entity {
+    id: ID!
+    form_name: String!
+    pattern_name: String!
+    first_layer_color_number: String!
+    second_layer_color_number: String!
+}
+
 type AccountWithDeposit @entity {
     id: ID!
     deposit: BigInt!

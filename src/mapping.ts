@@ -10,7 +10,8 @@ import {
     Team,
     User,
     UserInGameInfo,
-    UserStatistics
+    UserStatistics,
+    TeamLogo
 } from "../generated/schema"
 import {typedMapToString} from "./utils"
 
@@ -229,9 +230,10 @@ export function handleReceipt(
             handleAcceptOrDeclineRequestPlayEvent(actions[i], receiptWithOutcome)
         else if (functionCall.methodName == "decline_request_play")
             handleAcceptOrDeclineRequestPlayEvent(actions[i], receiptWithOutcome)
-        else if (functionCall.methodName == "remove_friend") {
+        else if (functionCall.methodName == "remove_friend")
             handleRemoveFriendEvent(actions[i], receiptWithOutcome)
-        }
+        else if (functionCall.methodName == "set_team_logo")
+            handleSetTeamLogo(actions[i], receiptWithOutcome)
         else
             log.info("handleReceipt: Invalid method name: {}", [functionCall.methodName])
     }
@@ -871,4 +873,37 @@ function handleRemoveFriendEvent(action: near.ActionValue, receiptWithOutcome: n
     friend.friends = deleteObjFromArray(friend.friends, account.id)
     account.save()
     friend.save()
+}
+
+function handleSetTeamLogo(action: near.ActionValue, receiptWithOutcome: near.ReceiptWithOutcome): void {
+
+    if (action.kind != near.ActionKind.FUNCTION_CALL) {
+        log.error("handleSetTeamLogo: action is not a function call", []);
+        return;
+    }
+    const functionCall = action.toFunctionCall();
+    const methodName = functionCall.methodName
+
+    if (!(methodName == "set_team_logo")) {
+        log.error("handleSetTeamLogo: Invalid method name: {}", [methodName]);
+        return
+    }
+
+    // set_team_logo(&self, form_name: &str, patter_name: &str, first_layer_color_numer: &str, second_layer_color_number: &str)
+    const args = json.fromString(functionCall.args.toString()).toObject()
+    const formName = args.get("form_name")!.toString()
+    const patternName = args.get("pattern_name")!.toString()
+    const firstLayerColorNumber = args.get("first_layer_color_number")!.toString()
+    const secondLayerColorNumber = args.get("second_layer_color_number")!.toString()
+
+    let team_logo = TeamLogo.load(receiptWithOutcome.receipt.signerId)
+    if (!team_logo) {
+        team_logo = new TeamLogo(receiptWithOutcome.receipt.signerId)
+    }
+    team_logo.form_name = formName
+    team_logo.pattern_name = patternName
+    team_logo.first_layer_color_number = firstLayerColorNumber
+    team_logo.second_layer_color_number = secondLayerColorNumber
+    team_logo.save()
+    return
 }

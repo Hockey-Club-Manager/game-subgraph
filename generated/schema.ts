@@ -132,6 +132,74 @@ export class User extends Entity {
   }
 }
 
+export class TeamLogo extends Entity {
+  constructor(id: string) {
+    super();
+    this.set("id", Value.fromString(id));
+  }
+
+  save(): void {
+    let id = this.get("id");
+    assert(id != null, "Cannot save TeamLogo entity without an ID");
+    if (id) {
+      assert(
+        id.kind == ValueKind.STRING,
+        `Entities of type TeamLogo must have an ID of type String but the id '${id.displayData()}' is of type ${id.displayKind()}`
+      );
+      store.set("TeamLogo", id.toString(), this);
+    }
+  }
+
+  static load(id: string): TeamLogo | null {
+    return changetype<TeamLogo | null>(store.get("TeamLogo", id));
+  }
+
+  get id(): string {
+    let value = this.get("id");
+    return value!.toString();
+  }
+
+  set id(value: string) {
+    this.set("id", Value.fromString(value));
+  }
+
+  get form_name(): string {
+    let value = this.get("form_name");
+    return value!.toString();
+  }
+
+  set form_name(value: string) {
+    this.set("form_name", Value.fromString(value));
+  }
+
+  get pattern_name(): string {
+    let value = this.get("pattern_name");
+    return value!.toString();
+  }
+
+  set pattern_name(value: string) {
+    this.set("pattern_name", Value.fromString(value));
+  }
+
+  get first_layer_color_number(): string {
+    let value = this.get("first_layer_color_number");
+    return value!.toString();
+  }
+
+  set first_layer_color_number(value: string) {
+    this.set("first_layer_color_number", Value.fromString(value));
+  }
+
+  get second_layer_color_number(): string {
+    let value = this.get("second_layer_color_number");
+    return value!.toString();
+  }
+
+  set second_layer_color_number(value: string) {
+    this.set("second_layer_color_number", Value.fromString(value));
+  }
+}
+
 export class AccountWithDeposit extends Entity {
   constructor(id: string) {
     super();
