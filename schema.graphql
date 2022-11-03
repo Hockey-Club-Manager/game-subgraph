@@ -44,6 +44,8 @@ type Game @entity {
     reward: BigInt!
     winner_index: Int
     last_event_generation_time: BigInt
+    event_generation_delay: BigInt
+    number_of_generated_events_in_block: Int
     player_with_puck: FieldPlayer
     zone_number: Int!
     turns: Int!
@@ -73,17 +75,37 @@ type Five @entity {
     number: String!
     ice_time_priority: String!
     tactic: String!
-    time_field: Int!
 }
 
 type Team @entity {
     id: ID!
     fives: [Five!]!
-    active_five: String!
+    active_five: ActiveFive!
     penalty_players: [FieldPlayer!]!
+    players_to_big_penalty: [FieldPlayer!]!
+    players_to_small_penalty: [FieldPlayer!]!
+    goalie_substitutions: [GoalieSubstitution!]!
+    active_goalie_substitution: String!
     goalies: [Goalie!]!
     active_goalie: String!
     score: Int!
+}
+
+type GoalieSubstitution @entity {
+    id: ID! # id is game_id + _ + goalie_id . Example: 1_token-1234567890
+    substitution: String!
+    goalie: Goalie!
+}
+
+type ActiveFive @entity {
+    id: ID! # five id (see Five entity)
+    current_number: String!
+    replaced_position: [String!]!
+    field_players: [PlayerOnPosition!]!
+    is_goalie_out: Boolean!
+    ice_time_priority: String!
+    tactic: String!
+    time_field: Int
 }
 
 # UserInfo
@@ -118,7 +140,7 @@ type FieldPlayer @entity {
 }
 
 type Goalie @entity {
-    id: ID!  # goalie_number + _ + user_id + _ + game_id
+    id: ID!  # id of NFT + _ + game_id
     img: String
     name: String
     goalie_number: String!  # MainGoalkeeper or SubstituteGoalkeeper

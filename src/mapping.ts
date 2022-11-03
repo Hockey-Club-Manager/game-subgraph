@@ -11,7 +11,7 @@ import {
     User,
     UserInGameInfo,
     UserStatistics,
-    TeamLogo
+    TeamLogo, ActiveFive, GoalieSubstitution
 } from "../generated/schema"
 import {typedMapToString} from "./utils"
 
@@ -45,6 +45,10 @@ function getFiveId(gameId: string, userId: string, fiveNumber: string): string {
     return `${gameId}_${userId}_${fiveNumber}`
 }
 
+function getActiveFiveId(gameId: string, userId: string, fiveNumber: string): string {
+    return getFiveId(gameId, userId, fiveNumber)
+}
+
 function getUserInGameInfoId(userId: string, gameId: string): string {
     // id is game_id + _ + user_id. For example: 12345_1 or 12345_2 for user 1 and 2 correspondingly in game 12345
     return `${gameId}_${userId}`
@@ -54,8 +58,12 @@ function getPlayerId(tokenId: string, gameId: string): string {
     return `${tokenId}_${gameId}`
 }
 
-function getGoalieId(position: string, userId: string, gameId: string): string {
-    return `${position}_${userId}_${gameId}`
+function getGoalieId(tokenId: string, gameId: string): string {
+    return `${tokenId}_${gameId}`
+}
+
+function getGoalieSubstitutionId(gameId: string, tokenId: string): string {
+    return `${gameId}_${tokenId}`
 }
 
 function getAccountWithDepositId(accountId: string, friendId: string): string {
@@ -137,7 +145,6 @@ function updateUserInGameInfo(userInGameInfo: UserInGameInfo, userInGameInfoData
         five.number = fiveNumber
         five.ice_time_priority = fiveData.get("ice_time_priority")!.toString()
         five.tactic = fiveData.get("tactic")!.toString()
-        five.time_field = fiveData.get("time_field")!.toI64() as i32
         five.save()
 
         fives.push(five.id)
@@ -148,7 +155,7 @@ function updateUserInGameInfo(userInGameInfo: UserInGameInfo, userInGameInfoData
     for (let i = 0; i < goaliesData.entries.length; i++) {
         const goalieData = (goaliesData.entries[i].value as JSONValue).toObject()
         const goalieNumber = goaliesData.entries[i].key  // MainGoalkeeper or SubstituteGoalkeeper
-        const goalieId = getGoalieId(goalieNumber, goalieData.get("user_id")!.toI64().toString(), gameId)
+        const goalieId = getGoalieId(goalieData.get("id")!.toI64().toString(), gameId)
         let goalie = Goalie.load(goalieId)
         if (!goalie) {
             goalie = new Goalie(goalieId)
@@ -171,9 +178,57 @@ function updateUserInGameInfo(userInGameInfo: UserInGameInfo, userInGameInfoData
 
     team.score = (teamData.get("score") as JSONValue).toI64() as i32
     team.fives = fives
+    const activeFiveData = (teamData.get("active_five") as JSONValue).toObject()
+    let activeFive = ActiveFive.load(getActiveFiveId(gameId, userId.toString(), activeFiveData.get("current_number")!.toString()))
+    if (!activeFive) {
+        activeFive = new ActiveFive(getActiveFiveId(gameId, userId.toString(), activeFiveData.get("current_number")!.toString()))
+    }
+    activeFive.current_number = activeFiveData.get("current_number")!.toString()
+    activeFive.replaced_position = activeFive.get("replaced_position")!.toArray().map<string>((value) => value.toString())
+    activeFive.field_players = Five.load(activeFive.id)!.field_players
+    activeFive.is_goalie_out = activeFiveData.get("is_goalie_out")!.toBool()
+    activeFive.ice_time_priority = activeFiveData.get("ice_time_priority")!.toString()
+    activeFive.tactic = activeFiveData.get("tactic")!.toString()
+    activeFive.time_field = activeFiveData.get("time_field")!.toI64() as i32
+    activeFive.save()
+
     team.active_five = teamData.get("active_five")!.toString()
     team.active_goalie = teamData.get("active_goalie")!.toString()
     team.goalies = goalies
+    // active_goalie_substitution: String!
+    let playersToBigPenaltyData = teamData.get("players_to_big_penalty")!.toArray()
+    let playersToBigPenalty = new Array<string>()
+    for (let i = 0; i < playersToBigPenaltyData.length; i++) {
+        const element = playersToBigPenaltyData[i]
+        playersToBigPenalty.push(getPlayerId(element.toString(), gameId))
+    }
+    team.players_to_big_penalty = playersToBigPenalty
+
+    let playersToSmallPenaltyData = teamData.get("players_to_small_penalty")!.toArray()
+    let playersToSmallPenalty = new Array<string>()
+    for (let i = 0; i < playersToSmallPenaltyData.length; i++) {
+        const element = playersToSmallPenaltyData[i]
+        playersToSmallPenalty.push(getPlayerId(element.toString(), gameId))
+    }
+    team.players_to_small_penalty = playersToSmallPenalty
+
+    let goalieSubstitutionsData = teamData.get("goalie_substitutions")!.toObject()
+    let goalieSubstitutions = new Array<string>()
+    for (let i = 0; i < goalieSubstitutionsData.entries.length; i++) {
+        const substitution = goalieSubstitutionsData.entries[i].key
+        const goalieOnSubstitution = Goalie.load(getGoalieId(goalieSubstitutionsData.get(substitution)!.toString(), gameId))!
+        let goalieSubstitution = GoalieSubstitution.load(getGoalieSubstitutionId(gameId, goalieSubstitutionsData.get(substitution)!.toString()))
+        if (!goalieSubstitution) {
+            goalieSubstitution = new GoalieSubstitution(getGoalieSubstitutionId(gameId, goalieSubstitutionsData.get(substitution)!.toString()))
+            goalieSubstitution.substitution = substitution
+            goalieSubstitution.goalie = goalieOnSubstitution.id
+            goalieSubstitution.save()
+        }
+        goalieSubstitutions.push(goalieSubstitution.id)
+    }
+    team.goalie_substitutions = goalieSubstitutions
+    team.active_goalie_substitution = teamData.get("active_goalie_substitution")!.toString()
+
     const penaltyPlayers = new Array<string>()
 
     const penaltyPlayersData = (teamData.get("penalty_players") as JSONValue).toArray()
@@ -423,22 +478,19 @@ function handleGenerateEvent (
     // main logic
     const gameId = (args.get("game_id") as JSONValue).toI64() as i32
 
-    let returnedValuesArray: Array<JSONValue>;
+    let eventData: TypedMap<string, JSONValue>;
     if (receiptWithOutcome.outcome.status.kind == near.SuccessStatusKind.VALUE) {
         const returnBytes = receiptWithOutcome.outcome.status.toValue()
         if (returnBytes.toString() == "null") {
             return
         }
         // log.warning("returnBytes: {}, args: {}", [returnBytes.toString(), functionCall.args.toString()])
-        returnedValuesArray = json.fromString(returnBytes.toString()).toArray()
+        eventData = json.fromString(returnBytes.toString()).toObject()
     } else {
         log.error("handleGenerateEvent: outcome.status.kind is not a value", [])
         return
     }
     const game = Game.load(gameId.toString()) as Game
-    for (let i = 0; i < returnedValuesArray.length; i++) {
-        const eventData = returnedValuesArray[i].toObject()
-        // const eventData = (eventData.get("generated_event") as JSONValue).toObject()
         let stopGame: string | null = null
         let winnerId: string | null = null
         if (eventData.get("stop_game") != null) {
@@ -544,7 +596,6 @@ function handleGenerateEvent (
             game.winner_index = userInGameInfo1.user == winnerId ? 1 : 2
             game.reward = reward
         }
-    }
     game.save()
 }
 
@@ -800,43 +851,6 @@ function handleAcceptOrDeclineRequestPlayEvent(action: near.ActionValue, receipt
     account.save()
     friend.save()
 }
-
-// function handleDeclineRequestPlayEvent(action: near.ActionValue, receiptWithOutcome: near.ReceiptWithOutcome): void {
-//     if (action.kind != near.ActionKind.FUNCTION_CALL) {
-//         log.error("handleDeclineRequestPlayEvent: action is not a function call", []);
-//         return;
-//     }
-//     const functionCall = action.toFunctionCall();
-//     const methodName = functionCall.methodName
-//
-//     if (!(methodName == "decline_request_play")) {
-//         log.error("handleDeclineRequestPlayEvent: Invalid method name: {}", [methodName]);
-//         return
-//     }
-//
-//     const outcome = receiptWithOutcome.outcome;
-//     const args = json.fromString(functionCall.args.toString()).toObject()
-//     // pub fn decline_request_play (&mut self, friend_id: &AccountId)
-//     const friendId = args.get("friend_id")!.toString()
-//     const account = User.load(receiptWithOutcome.receipt.signerId) as User
-//     if (!account) {
-//         log.error("handleDeclineRequestPlayEvent: User not found", [])
-//         return
-//     }
-//     const friend = User.load(friendId) as User
-//     if (!friend) {
-//         log.error("handleDeclineRequestPlayEvent: Friend not found", [])
-//         return
-//     }
-//     if (!friend.sent_requests_play.includes(friendId)) {
-//         log.error("handleDeclineRequestPlayEvent: Request not sent", [])
-//         return
-//     }
-//     friend.sent_requests_play = deleteObjFromArray(friend.sent_requests_play, account.id)
-//     account.requests_play_received = deleteObjFromArray(account.requests_play_received, friendId)
-//     account.save()
-//     friend.save()
-// }
 
 function handleRemoveFriendEvent(action: near.ActionValue, receiptWithOutcome: near.ReceiptWithOutcome): void {
     if (action.kind != near.ActionKind.FUNCTION_CALL) {

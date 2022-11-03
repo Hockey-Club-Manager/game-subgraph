@@ -7,7 +7,7 @@ export function typedMapToString(typedMap: TypedMap<string, JSONValue>): string 
         let stringValue: string;
         switch (value.kind) {
             case JSONValueKind.STRING:
-                stringValue = value.toString()
+                stringValue = '"' + value.toString() + '"'
                 break
             case JSONValueKind.OBJECT:
                 stringValue = typedMapToString(value.toObject())

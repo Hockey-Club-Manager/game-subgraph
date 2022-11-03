@@ -431,6 +431,32 @@ export class Game extends Entity {
     }
   }
 
+  get event_generation_delay(): BigInt | null {
+    let value = this.get("event_generation_delay");
+    if (!value || value.kind == ValueKind.NULL) {
+      return null;
+    } else {
+      return value.toBigInt();
+    }
+  }
+
+  set event_generation_delay(value: BigInt | null) {
+    if (!value) {
+      this.unset("event_generation_delay");
+    } else {
+      this.set("event_generation_delay", Value.fromBigInt(<BigInt>value));
+    }
+  }
+
+  get number_of_generated_events_in_block(): i32 {
+    let value = this.get("number_of_generated_events_in_block");
+    return value!.toI32();
+  }
+
+  set number_of_generated_events_in_block(value: i32) {
+    this.set("number_of_generated_events_in_block", Value.fromI32(value));
+  }
+
   get player_with_puck(): string | null {
     let value = this.get("player_with_puck");
     if (!value || value.kind == ValueKind.NULL) {
@@ -713,15 +739,6 @@ export class Five extends Entity {
   set tactic(value: string) {
     this.set("tactic", Value.fromString(value));
   }
-
-  get time_field(): i32 {
-    let value = this.get("time_field");
-    return value!.toI32();
-  }
-
-  set time_field(value: i32) {
-    this.set("time_field", Value.fromI32(value));
-  }
 }
 
 export class Team extends Entity {
@@ -782,6 +799,42 @@ export class Team extends Entity {
     this.set("penalty_players", Value.fromStringArray(value));
   }
 
+  get players_to_big_penalty(): Array<string> {
+    let value = this.get("players_to_big_penalty");
+    return value!.toStringArray();
+  }
+
+  set players_to_big_penalty(value: Array<string>) {
+    this.set("players_to_big_penalty", Value.fromStringArray(value));
+  }
+
+  get players_to_small_penalty(): Array<string> {
+    let value = this.get("players_to_small_penalty");
+    return value!.toStringArray();
+  }
+
+  set players_to_small_penalty(value: Array<string>) {
+    this.set("players_to_small_penalty", Value.fromStringArray(value));
+  }
+
+  get goalie_substitutions(): Array<string> {
+    let value = this.get("goalie_substitutions");
+    return value!.toStringArray();
+  }
+
+  set goalie_substitutions(value: Array<string>) {
+    this.set("goalie_substitutions", Value.fromStringArray(value));
+  }
+
+  get active_goalie_substitution(): string {
+    let value = this.get("active_goalie_substitution");
+    return value!.toString();
+  }
+
+  set active_goalie_substitution(value: string) {
+    this.set("active_goalie_substitution", Value.fromString(value));
+  }
+
   get goalies(): Array<string> {
     let value = this.get("goalies");
     return value!.toStringArray();
@@ -807,6 +860,153 @@ export class Team extends Entity {
 
   set score(value: i32) {
     this.set("score", Value.fromI32(value));
+  }
+}
+
+export class GoalieSubstitution extends Entity {
+  constructor(id: string) {
+    super();
+    this.set("id", Value.fromString(id));
+  }
+
+  save(): void {
+    let id = this.get("id");
+    assert(id != null, "Cannot save GoalieSubstitution entity without an ID");
+    if (id) {
+      assert(
+        id.kind == ValueKind.STRING,
+        `Entities of type GoalieSubstitution must have an ID of type String but the id '${id.displayData()}' is of type ${id.displayKind()}`
+      );
+      store.set("GoalieSubstitution", id.toString(), this);
+    }
+  }
+
+  static load(id: string): GoalieSubstitution | null {
+    return changetype<GoalieSubstitution | null>(
+      store.get("GoalieSubstitution", id)
+    );
+  }
+
+  get id(): string {
+    let value = this.get("id");
+    return value!.toString();
+  }
+
+  set id(value: string) {
+    this.set("id", Value.fromString(value));
+  }
+
+  get substitution(): string {
+    let value = this.get("substitution");
+    return value!.toString();
+  }
+
+  set substitution(value: string) {
+    this.set("substitution", Value.fromString(value));
+  }
+
+  get goalie(): string {
+    let value = this.get("goalie");
+    return value!.toString();
+  }
+
+  set goalie(value: string) {
+    this.set("goalie", Value.fromString(value));
+  }
+}
+
+export class ActiveFive extends Entity {
+  constructor(id: string) {
+    super();
+    this.set("id", Value.fromString(id));
+  }
+
+  save(): void {
+    let id = this.get("id");
+    assert(id != null, "Cannot save ActiveFive entity without an ID");
+    if (id) {
+      assert(
+        id.kind == ValueKind.STRING,
+        `Entities of type ActiveFive must have an ID of type String but the id '${id.displayData()}' is of type ${id.displayKind()}`
+      );
+      store.set("ActiveFive", id.toString(), this);
+    }
+  }
+
+  static load(id: string): ActiveFive | null {
+    return changetype<ActiveFive | null>(store.get("ActiveFive", id));
+  }
+
+  get id(): string {
+    let value = this.get("id");
+    return value!.toString();
+  }
+
+  set id(value: string) {
+    this.set("id", Value.fromString(value));
+  }
+
+  get current_number(): string {
+    let value = this.get("current_number");
+    return value!.toString();
+  }
+
+  set current_number(value: string) {
+    this.set("current_number", Value.fromString(value));
+  }
+
+  get replaced_position(): Array<string> {
+    let value = this.get("replaced_position");
+    return value!.toStringArray();
+  }
+
+  set replaced_position(value: Array<string>) {
+    this.set("replaced_position", Value.fromStringArray(value));
+  }
+
+  get field_players(): Array<string> {
+    let value = this.get("field_players");
+    return value!.toStringArray();
+  }
+
+  set field_players(value: Array<string>) {
+    this.set("field_players", Value.fromStringArray(value));
+  }
+
+  get is_goalie_out(): boolean {
+    let value = this.get("is_goalie_out");
+    return value!.toBoolean();
+  }
+
+  set is_goalie_out(value: boolean) {
+    this.set("is_goalie_out", Value.fromBoolean(value));
+  }
+
+  get ice_time_priority(): string {
+    let value = this.get("ice_time_priority");
+    return value!.toString();
+  }
+
+  set ice_time_priority(value: string) {
+    this.set("ice_time_priority", Value.fromString(value));
+  }
+
+  get tactic(): string {
+    let value = this.get("tactic");
+    return value!.toString();
+  }
+
+  set tactic(value: string) {
+    this.set("tactic", Value.fromString(value));
+  }
+
+  get time_field(): i32 {
+    let value = this.get("time_field");
+    return value!.toI32();
+  }
+
+  set time_field(value: i32) {
+    this.set("time_field", Value.fromI32(value));
   }
 }
 
