@@ -43,12 +43,12 @@ type Game @entity {
     user2: UserInGameInfo!
     reward: BigInt!
     winner_index: Int
-    last_event_generation_time: BigInt
-    event_generation_delay: BigInt
-    number_of_generated_events_in_block: Int
-    player_with_puck: FieldPlayer
-    zone_number: Int!
-    turns: Int!
+#    last_event_generation_time: BigInt
+#    event_generation_delay: BigInt
+#    number_of_generated_events_in_block: Int
+#    player_with_puck: FieldPlayer
+#    zone_number: Int!
+#    turns: Int!
     events: [Event!]
 }
 
@@ -56,11 +56,12 @@ type Event @entity {
     id: ID!  # id is game_id + _ + generated events count. Examples: 54_1, 54_2
     event_number: Int!
     player_with_puck: FieldPlayer
-    action: String!
+    actions: [String!]!
     zone_number: Int!
     time: BigInt!
     user1: UserInGameInfo!
     user2: UserInGameInfo!
+    event_generation_delay: BigInt!
 }
 
 type PlayerOnPosition @entity {

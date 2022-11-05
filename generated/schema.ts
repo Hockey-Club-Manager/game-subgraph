@@ -414,84 +414,6 @@ export class Game extends Entity {
     this.set("winner_index", Value.fromI32(value));
   }
 
-  get last_event_generation_time(): BigInt | null {
-    let value = this.get("last_event_generation_time");
-    if (!value || value.kind == ValueKind.NULL) {
-      return null;
-    } else {
-      return value.toBigInt();
-    }
-  }
-
-  set last_event_generation_time(value: BigInt | null) {
-    if (!value) {
-      this.unset("last_event_generation_time");
-    } else {
-      this.set("last_event_generation_time", Value.fromBigInt(<BigInt>value));
-    }
-  }
-
-  get event_generation_delay(): BigInt | null {
-    let value = this.get("event_generation_delay");
-    if (!value || value.kind == ValueKind.NULL) {
-      return null;
-    } else {
-      return value.toBigInt();
-    }
-  }
-
-  set event_generation_delay(value: BigInt | null) {
-    if (!value) {
-      this.unset("event_generation_delay");
-    } else {
-      this.set("event_generation_delay", Value.fromBigInt(<BigInt>value));
-    }
-  }
-
-  get number_of_generated_events_in_block(): i32 {
-    let value = this.get("number_of_generated_events_in_block");
-    return value!.toI32();
-  }
-
-  set number_of_generated_events_in_block(value: i32) {
-    this.set("number_of_generated_events_in_block", Value.fromI32(value));
-  }
-
-  get player_with_puck(): string | null {
-    let value = this.get("player_with_puck");
-    if (!value || value.kind == ValueKind.NULL) {
-      return null;
-    } else {
-      return value.toString();
-    }
-  }
-
-  set player_with_puck(value: string | null) {
-    if (!value) {
-      this.unset("player_with_puck");
-    } else {
-      this.set("player_with_puck", Value.fromString(<string>value));
-    }
-  }
-
-  get zone_number(): i32 {
-    let value = this.get("zone_number");
-    return value!.toI32();
-  }
-
-  set zone_number(value: i32) {
-    this.set("zone_number", Value.fromI32(value));
-  }
-
-  get turns(): i32 {
-    let value = this.get("turns");
-    return value!.toI32();
-  }
-
-  set turns(value: i32) {
-    this.set("turns", Value.fromI32(value));
-  }
-
   get events(): Array<string> | null {
     let value = this.get("events");
     if (!value || value.kind == ValueKind.NULL) {
@@ -567,13 +489,13 @@ export class Event extends Entity {
     }
   }
 
-  get action(): string {
-    let value = this.get("action");
-    return value!.toString();
+  get actions(): Array<string> {
+    let value = this.get("actions");
+    return value!.toStringArray();
   }
 
-  set action(value: string) {
-    this.set("action", Value.fromString(value));
+  set actions(value: Array<string>) {
+    this.set("actions", Value.fromStringArray(value));
   }
 
   get zone_number(): i32 {
@@ -610,6 +532,15 @@ export class Event extends Entity {
 
   set user2(value: string) {
     this.set("user2", Value.fromString(value));
+  }
+
+  get event_generation_delay(): BigInt {
+    let value = this.get("event_generation_delay");
+    return value!.toBigInt();
+  }
+
+  set event_generation_delay(value: BigInt) {
+    this.set("event_generation_delay", Value.fromBigInt(value));
   }
 }
 

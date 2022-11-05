@@ -411,16 +411,7 @@ function handleOnGetTeam (
     game.user2 = user2InGameInfo.id
     game.reward = returnedValue.get("reward")!.toObject().get("balance")!.toBigInt()
     // game.winner_index = (returnedValue.get("winner_index") as JSONValue).toI64() as i32
-    game.last_event_generation_time = (returnedValue.get("last_event_generation_time") as JSONValue).toBigInt()
-    game.zone_number = returnedValue.get("zone_number")!.toI64() as i32
-    game.turns = returnedValue.get("turns")!.toI64() as i32
     game.events = null
-    const playerWithPuck = returnedValue.get("player_with_puck")
-    if (!playerWithPuck!.isNull())
-        game.player_with_puck = getPlayerId(playerWithPuck!.toArray()[1].toString(), game.id)
-    else
-        game.player_with_puck = null
-
 
     // adding game to User.games for both users
     let games = user1.games
@@ -499,7 +490,7 @@ function handleGenerateEvent (
         }
         if (stopGame) {
             const lastEvent = Event.load(game.events!.at(-1)) as Event
-            if (lastEvent.action == "GameFinished")
+            if (lastEvent.actions.some((value) => value.includes("GameFinished")))
                 return
             else {
                 log.error("handleGenerateEvent: Game is not finished, but stop_game field was retrieved", [])
@@ -519,9 +510,11 @@ function handleGenerateEvent (
         if (!eventData.get("player_with_puck")!.isNull())
             event.player_with_puck = getPlayerId(eventData.get("player_with_puck")!.toArray()[1].toString(), game.id)
         else event.player_with_puck = null
-        event.action = eventData.get("action")!.toString()
+        const actions = eventData.get("actions")!.toArray().map<string>(obj => typedMapToString(obj.toObject()))
+        event.actions = actions
         event.zone_number = eventData.get("zone_number")!.toI64() as i32
         event.time = eventData.get("time")!.toBigInt()
+        event.event_generation_delay = eventData.get("event_generation_delay")!.toBigInt()
 
     const userInGameInfo1 = UserInGameInfo.load(game.user1) as UserInGameInfo
     const userInGameInfo2 = UserInGameInfo.load(game.user2) as UserInGameInfo
@@ -535,10 +528,8 @@ function handleGenerateEvent (
 
         // updating game
         game.events = addObjToArray(game.events, event.id)
-        game.turns += 1
-        game.last_event_generation_time = event.time
 
-        if (event.action == "Goal") {
+        if (event.actions.some((value) => value.includes("Goal"))) {
             const fieldPlayerWithPuck = FieldPlayer.load(getPlayerId(eventData.get("player_with_puck")!.toArray()[1].toString(), game.id))!
             let winner: UserInGameInfo
             let loser: UserInGameInfo
@@ -560,7 +551,7 @@ function handleGenerateEvent (
         }
 
         // if game finished
-        if (event.action == "GameFinished") {
+        if (event.actions.some((value) => value.includes("GameFinished"))) {
             const logs = receiptWithOutcome.outcome.logs
             let winnerLog: Array<JSONValue> = []
             for (let i = 0; i < logs.length; i++) {
