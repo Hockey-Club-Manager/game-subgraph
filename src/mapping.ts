@@ -289,6 +289,8 @@ export function handleReceipt(
             handleRemoveFriendEvent(actions[i], receiptWithOutcome)
         else if (functionCall.methodName == "set_team_logo")
             handleSetTeamLogo(actions[i], receiptWithOutcome)
+        else if (functionCall.methodName == "internal_stop_game")
+            handleInternalStopGame(actions[i], receiptWithOutcome)
         else
             log.info("handleReceipt: Invalid method name: {}", [functionCall.methodName])
     }
@@ -911,5 +913,36 @@ function handleSetTeamLogo(action: near.ActionValue, receiptWithOutcome: near.Re
     team_logo.first_layer_color_number = firstLayerColorNumber
     team_logo.second_layer_color_number = secondLayerColorNumber
     team_logo.save()
+    return
+}
+
+function handleInternalStopGame(action: near.ActionValue, receiptWithOutcome: near.ReceiptWithOutcome): void {
+    if (action.kind != near.ActionKind.FUNCTION_CALL) {
+        log.error("handleInternalStopGame: action is not a function call", []);
+        return;
+    }
+    const functionCall = action.toFunctionCall();
+    const methodName = functionCall.methodName
+
+    if (!(methodName == "internal_stop_game")) {
+        log.error("handleInternalStopGame: Invalid method name: {}", [methodName]);
+        return
+    }
+
+    const args = json.fromString(functionCall.args.toString()).toObject()
+    const game_id = args.get("game_id")!.toString()
+
+    const game = Game.load(game_id)
+    if (!game) {
+        log.error("handleInternalStopGame: Game not found", [])
+        return
+    }
+
+    // remove all the data in game using store.remove
+    const userInGame1 = UserInGameInfo.load(game.user1)!
+    const userInGame2 = UserInGameInfo.load(game.user2)!
+    store.remove("UserInGameInfo", userInGame1.id)
+    store.remove("UserInGameInfo", userInGame2.id)
+    store.remove("Game", game_id)
     return
 }

@@ -43,12 +43,6 @@ type Game @entity {
     user2: UserInGameInfo!
     reward: BigInt!
     winner_index: Int
-#    last_event_generation_time: BigInt
-#    event_generation_delay: BigInt
-#    number_of_generated_events_in_block: Int
-#    player_with_puck: FieldPlayer
-#    zone_number: Int!
-#    turns: Int!
     events: [Event!]
 }
 
