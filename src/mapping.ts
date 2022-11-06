@@ -216,7 +216,7 @@ function updateUserInGameInfo(userInGameInfo: UserInGameInfo, userInGameInfoData
     let goalieSubstitutions = new Array<string>()
     for (let i = 0; i < goalieSubstitutionsData.entries.length; i++) {
         const substitution = goalieSubstitutionsData.entries[i].key
-        const goalieOnSubstitution = Goalie.load(getGoalieId(goalieSubstitutionsData.get(substitution)!.toString(), gameId))!
+        const goalieOnSubstitution = FieldPlayer.load(getPlayerId(goalieSubstitutionsData.get(substitution)!.toString(), gameId))!
         let goalieSubstitution = GoalieSubstitution.load(getGoalieSubstitutionId(gameId, goalieSubstitutionsData.get(substitution)!.toString()))
         if (!goalieSubstitution) {
             goalieSubstitution = new GoalieSubstitution(getGoalieSubstitutionId(gameId, goalieSubstitutionsData.get(substitution)!.toString()))
