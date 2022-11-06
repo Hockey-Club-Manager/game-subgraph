@@ -93,9 +93,9 @@ type Team @entity {
 }
 
 type GoalieSubstitution @entity {
-    id: ID! # id is game_id + _ + goalie_id . Example: 1_token-1234567890
+    id: ID! # id is game_id + _ + token_id . Example: 1_token-1234567890
     substitution: String!
-    goalie: FieldPlayer!
+    player: FieldPlayer!
 }
 
 type ActiveFive @entity {

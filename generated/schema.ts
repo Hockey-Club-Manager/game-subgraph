@@ -836,13 +836,13 @@ export class GoalieSubstitution extends Entity {
     this.set("substitution", Value.fromString(value));
   }
 
-  get goalie(): string {
-    let value = this.get("goalie");
+  get player(): string {
+    let value = this.get("player");
     return value!.toString();
   }
 
-  set goalie(value: string) {
-    this.set("goalie", Value.fromString(value));
+  set player(value: string) {
+    this.set("player", Value.fromString(value));
   }
 }
 

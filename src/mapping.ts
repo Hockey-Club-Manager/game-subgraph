@@ -216,12 +216,12 @@ function updateUserInGameInfo(userInGameInfo: UserInGameInfo, userInGameInfoData
     let goalieSubstitutions = new Array<string>()
     for (let i = 0; i < goalieSubstitutionsData.entries.length; i++) {
         const substitution = goalieSubstitutionsData.entries[i].key
-        const goalieOnSubstitution = FieldPlayer.load(getPlayerId(goalieSubstitutionsData.get(substitution)!.toString(), gameId))!
+        const playerOnSubstitution = FieldPlayer.load(getPlayerId(goalieSubstitutionsData.get(substitution)!.toString(), gameId))!
         let goalieSubstitution = GoalieSubstitution.load(getGoalieSubstitutionId(gameId, goalieSubstitutionsData.get(substitution)!.toString()))
         if (!goalieSubstitution) {
             goalieSubstitution = new GoalieSubstitution(getGoalieSubstitutionId(gameId, goalieSubstitutionsData.get(substitution)!.toString()))
             goalieSubstitution.substitution = substitution
-            goalieSubstitution.goalie = goalieOnSubstitution.id
+            goalieSubstitution.player = playerOnSubstitution.id
             goalieSubstitution.save()
         }
         goalieSubstitutions.push(goalieSubstitution.id)
