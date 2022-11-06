@@ -58,8 +58,8 @@ function getPlayerId(tokenId: string, gameId: string): string {
     return `${tokenId}_${gameId}`
 }
 
-function getGoalieId(tokenId: string, gameId: string): string {
-    return `${tokenId}_${gameId}`
+function getGoalieId(goalie_number: string, gameId: string): string {
+    return `${goalie_number}_${gameId}`
 }
 
 function getGoalieSubstitutionId(gameId: string, tokenId: string): string {
@@ -155,7 +155,7 @@ function updateUserInGameInfo(userInGameInfo: UserInGameInfo, userInGameInfoData
     for (let i = 0; i < goaliesData.entries.length; i++) {
         const goalieData = (goaliesData.entries[i].value as JSONValue).toObject()
         const goalieNumber = goaliesData.entries[i].key  // MainGoalkeeper or SubstituteGoalkeeper
-        const goalieId = getGoalieId(goalieData.get("id")!.toI64().toString(), gameId)
+        const goalieId = getGoalieId(goalieNumber, gameId)
         let goalie = Goalie.load(goalieId)
         if (!goalie) {
             goalie = new Goalie(goalieId)
@@ -184,7 +184,7 @@ function updateUserInGameInfo(userInGameInfo: UserInGameInfo, userInGameInfoData
         activeFive = new ActiveFive(getActiveFiveId(gameId, userId.toString(), activeFiveData.get("current_number")!.toString()))
     }
     activeFive.current_number = activeFiveData.get("current_number")!.toString()
-    activeFive.replaced_position = activeFive.get("replaced_position")!.toArray().map<string>((value) => value.toString())
+    activeFive.replaced_position = activeFiveData.get("replaced_position")!.toArray().map<string>((value) => value.toString())
     activeFive.field_players = Five.load(activeFive.id)!.field_players
     activeFive.is_goalie_out = activeFiveData.get("is_goalie_out")!.toBool()
     activeFive.ice_time_priority = activeFiveData.get("ice_time_priority")!.toString()
@@ -192,7 +192,7 @@ function updateUserInGameInfo(userInGameInfo: UserInGameInfo, userInGameInfoData
     activeFive.time_field = activeFiveData.get("time_field")!.toI64() as i32
     activeFive.save()
 
-    team.active_five = teamData.get("active_five")!.toString()
+    team.active_five = activeFive.id
     team.active_goalie = teamData.get("active_goalie")!.toString()
     team.goalies = goalies
     // active_goalie_substitution: String!
@@ -482,111 +482,112 @@ function handleGenerateEvent (
         return
     }
     const game = Game.load(gameId.toString()) as Game
-        let stopGame: string | null = null
-        let winnerId: string | null = null
-        if (eventData.get("stop_game") != null) {
-            stopGame = (eventData.get("stop_game") as JSONValue).toBigInt().toString()
-            winnerId = (eventData.get("winner_id") as JSONValue).toString()
+    let stopGame: string | null = null
+    let winnerId: string | null = null
+    if (eventData.get("stop_game") != null) {
+        stopGame = (eventData.get("stop_game") as JSONValue).toBigInt().toString()
+        winnerId = (eventData.get("winner_id") as JSONValue).toString()
+    }
+    if (stopGame) {
+        const lastEvent = Event.load(game.events!.at(-1)) as Event
+        if (lastEvent.actions.some((value) => value.includes("GameFinished")))
+            return
+        else {
+            log.error("handleGenerateEvent: Game is not finished, but stop_game field was retrieved", [])
+            return
         }
-        if (stopGame) {
-            const lastEvent = Event.load(game.events!.at(-1)) as Event
-            if (lastEvent.actions.some((value) => value.includes("GameFinished")))
-                return
-            else {
-                log.error("handleGenerateEvent: Game is not finished, but stop_game field was retrieved", [])
-                return
-            }
-        }
+    }
 
-        // creating event
-        let event: Event;
-        if (game.events) {
-            event = new Event(getEventId(gameId.toString(), game.events!.length))
-            event.event_number = game.events!.length + 1
-        } else {
-            event = new Event(getEventId(gameId.toString(), 0))
-            event.event_number = 0
-        }
-        if (!eventData.get("player_with_puck")!.isNull())
-            event.player_with_puck = getPlayerId(eventData.get("player_with_puck")!.toArray()[1].toString(), game.id)
-        else event.player_with_puck = null
-        const actions = eventData.get("actions")!.toArray().map<string>(obj => typedMapToString(obj.toObject()))
-        event.actions = actions
-        event.zone_number = eventData.get("zone_number")!.toI64() as i32
-        event.time = eventData.get("time")!.toBigInt()
-        event.event_generation_delay = eventData.get("event_generation_delay")!.toBigInt()
+    // creating event
+    let event: Event;
+    if (game.events) {
+        event = new Event(getEventId(gameId.toString(), game.events!.length))
+        event.event_number = game.events!.length + 1
+    } else {
+        event = new Event(getEventId(gameId.toString(), 0))
+        event.event_number = 0
+    }
+    if (!eventData.get("player_with_puck")!.isNull())
+        event.player_with_puck = getPlayerId(eventData.get("player_with_puck")!.toArray()[1].toString(), game.id)
+    else event.player_with_puck = null
+    const actions = eventData.get("actions")!.toArray().map<string>(obj => typedMapToString(obj.toObject()))
+    event.actions = actions
+    event.zone_number = eventData.get("zone_number")!.toI64() as i32
+    event.time = eventData.get("time")!.toBigInt()
+    event.event_generation_delay = eventData.get("event_generation_delay")!.toBigInt()
 
     const userInGameInfo1 = UserInGameInfo.load(game.user1) as UserInGameInfo
     const userInGameInfo2 = UserInGameInfo.load(game.user2) as UserInGameInfo
 
-        updateUserInGameInfo(userInGameInfo1, eventData.get("user1")!.toObject(), game.id)
-        updateUserInGameInfo(userInGameInfo2, eventData.get("user2")!.toObject(), game.id)
-        event.user1 = userInGameInfo1.id
-        event.user2 = userInGameInfo2.id
+    updateUserInGameInfo(userInGameInfo1, eventData.get("user1")!.toObject(), game.id)
+    updateUserInGameInfo(userInGameInfo2, eventData.get("user2")!.toObject(), game.id)
+    event.user1 = userInGameInfo1.id
+    event.user2 = userInGameInfo2.id
+    event.game_id = gameId
 
-        event.save()
+    event.save()
 
-        // updating game
-        game.events = addObjToArray(game.events, event.id)
+    // updating game
+    game.events = addObjToArray(game.events, event.id)
 
-        if (event.actions.some((value) => value.includes("Goal"))) {
-            const fieldPlayerWithPuck = FieldPlayer.load(getPlayerId(eventData.get("player_with_puck")!.toArray()[1].toString(), game.id))!
-            let winner: UserInGameInfo
-            let loser: UserInGameInfo
-            if (fieldPlayerWithPuck.user_in_game_info == userInGameInfo1.id) {
-                winner = userInGameInfo1
-                loser = userInGameInfo2
-            } else {
-                winner = userInGameInfo2
-                loser = userInGameInfo1
-            }
-            const userShotGoal = User.load(winner.user)!;
-            const statisticsWinner = UserStatistics.load(userShotGoal.statistics)!
-            statisticsWinner.total_goals += 1
-            statisticsWinner.save()
-            const userMissedGoal = User.load(loser.user)!
-            const statisticsLooser = UserStatistics.load(userMissedGoal.statistics)!
-            statisticsLooser.total_misses += 1
-            statisticsLooser.save()
+    if (event.actions.some((value) => value.includes("Goal"))) {
+        const fieldPlayerWithPuck = FieldPlayer.load(getPlayerId(eventData.get("player_with_puck")!.toArray()[1].toString(), game.id))!
+        let winner: UserInGameInfo
+        let loser: UserInGameInfo
+        if (fieldPlayerWithPuck.user_in_game_info == userInGameInfo1.id) {
+            winner = userInGameInfo1
+            loser = userInGameInfo2
+        } else {
+            winner = userInGameInfo2
+            loser = userInGameInfo1
         }
+        const userShotGoal = User.load(winner.user)!;
+        const statisticsWinner = UserStatistics.load(userShotGoal.statistics)!
+        statisticsWinner.total_goals += 1
+        statisticsWinner.save()
+        const userMissedGoal = User.load(loser.user)!
+        const statisticsLooser = UserStatistics.load(userMissedGoal.statistics)!
+        statisticsLooser.total_misses += 1
+        statisticsLooser.save()
+    }
 
-        // if game finished
-        if (event.actions.some((value) => value.includes("GameFinished"))) {
-            const logs = receiptWithOutcome.outcome.logs
-            let winnerLog: Array<JSONValue> = []
-            for (let i = 0; i < logs.length; i++) {
-                const tryLog = json.try_fromString(logs[i].toString())
-                if (tryLog.isOk) {
-                    if (json.fromString(logs[i]).kind == JSONValueKind.ARRAY) {
-                        winnerLog = json.fromString(logs[i]).toArray()
-                        break
-                    }
+    // if game finished
+    if (event.actions.some((value) => value.includes("GameFinished"))) {
+        const logs = receiptWithOutcome.outcome.logs
+        let winnerLog: Array<JSONValue> = []
+        for (let i = 0; i < logs.length; i++) {
+            const tryLog = json.try_fromString(logs[i].toString())
+            if (tryLog.isOk) {
+                if (json.fromString(logs[i]).kind == JSONValueKind.ARRAY) {
+                    winnerLog = json.fromString(logs[i]).toArray()
+                    break
                 }
             }
-            if (winnerLog.length == 0) {
-                log.error("handleGenerateEvent: No winner log", [])
-                return
-            }
-            // const winnerId = eventData.get("winner_id")!.toString()
-            const winnerId = winnerLog[1].toArray()[0].toString()
-            const winner = User.load(winnerId) as User
-            const loser = User.load(winnerId == userInGameInfo1.user ? userInGameInfo2.user : userInGameInfo1.user) as User
-            const reward = winnerLog[1].toArray()[1].toBigInt()
-            const winnerStatistics = UserStatistics.load(winner.statistics) as UserStatistics
-            const loserStatistics = UserStatistics.load(loser.statistics) as UserStatistics
-            winnerStatistics.victories += 1
-            loserStatistics.losses += 1
-            // @ts-ignore
-            winnerStatistics.total_reward = winnerStatistics.total_reward + reward
-            // @ts-ignore
-            loserStatistics.total_loss = loserStatistics.total_loss + reward
-            winnerStatistics.save()
-            loserStatistics.save()
-            winner.save()
-            loser.save()
-            game.winner_index = userInGameInfo1.user == winnerId ? 1 : 2
-            game.reward = reward
         }
+        if (winnerLog.length == 0) {
+            log.error("handleGenerateEvent: No winner log", [])
+            return
+        }
+        // const winnerId = eventData.get("winner_id")!.toString()
+        const winnerId = winnerLog[1].toArray()[0].toString()
+        const winner = User.load(winnerId) as User
+        const loser = User.load(winnerId == userInGameInfo1.user ? userInGameInfo2.user : userInGameInfo1.user) as User
+        const reward = winnerLog[1].toArray()[1].toBigInt()
+        const winnerStatistics = UserStatistics.load(winner.statistics) as UserStatistics
+        const loserStatistics = UserStatistics.load(loser.statistics) as UserStatistics
+        winnerStatistics.victories += 1
+        loserStatistics.losses += 1
+        // @ts-ignore
+        winnerStatistics.total_reward = winnerStatistics.total_reward + reward
+        // @ts-ignore
+        loserStatistics.total_loss = loserStatistics.total_loss + reward
+        winnerStatistics.save()
+        loserStatistics.save()
+        winner.save()
+        loser.save()
+        game.winner_index = userInGameInfo1.user == winnerId ? 1 : 2
+        game.reward = reward
+    }
     game.save()
 }
 
