@@ -938,11 +938,6 @@ function handleInternalStopGame(action: near.ActionValue, receiptWithOutcome: ne
         return
     }
 
-    // remove all the data in game using store.remove
-    const userInGame1 = UserInGameInfo.load(game.user1)!
-    const userInGame2 = UserInGameInfo.load(game.user2)!
-    store.remove("UserInGameInfo", userInGame1.id)
-    store.remove("UserInGameInfo", userInGame2.id)
     store.remove("Game", game_id)
     return
 }
