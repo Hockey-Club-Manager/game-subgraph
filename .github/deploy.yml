@@ -1,0 +1,25 @@
+name: Build & deploy testnet contracts
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+    environment:
+      name: testnet
+
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3.3.0
+        with:
+          node-version: 14
+
+      - run: yarn install
+      - run: yarn global add @graphprotocol/graph-cli
+      - run: graph auth --product hosted-service ${{ secrets.GRAPH_HOSTED_SERVICE_API_KEY }} > /dev/null
+      - run: yarn full-deploy

@@ -551,6 +551,15 @@ export class Event extends Entity {
   set event_generation_delay(value: BigInt) {
     this.set("event_generation_delay", Value.fromBigInt(value));
   }
+
+  get random_numbers(): Array<i32> {
+    let value = this.get("random_numbers");
+    return value!.toI32Array();
+  }
+
+  set random_numbers(value: Array<i32>) {
+    this.set("random_numbers", Value.fromI32Array(value));
+  }
 }
 
 export class PlayerOnPosition extends Entity {

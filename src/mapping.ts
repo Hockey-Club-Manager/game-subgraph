@@ -517,6 +517,7 @@ function handleGenerateEvent (
     event.zone_number = eventData.get("zone_number")!.toI64() as i32
     event.time = eventData.get("time")!.toBigInt()
     event.event_generation_delay = eventData.get("event_generation_delay")!.toBigInt()
+    event.random_numbers = eventData.get("random_numbers")!.toArray().map<i32>(obj => obj.toI64() as i32)
 
     const userInGameInfo1 = UserInGameInfo.load(game.user1) as UserInGameInfo
     const userInGameInfo2 = UserInGameInfo.load(game.user2) as UserInGameInfo

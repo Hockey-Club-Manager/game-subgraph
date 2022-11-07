@@ -57,6 +57,7 @@ type Event @entity {
     user1: UserInGameInfo!
     user2: UserInGameInfo!
     event_generation_delay: BigInt!
+    random_numbers: [Int!]!
 }
 
 type PlayerOnPosition @entity {
