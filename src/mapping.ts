@@ -930,14 +930,15 @@ function handleInternalStopGame(action: near.ActionValue, receiptWithOutcome: ne
     }
 
     const args = json.fromString(functionCall.args.toString()).toObject()
-    const game_id = args.get("game_id")!.toString()
+    const game_id = args.get("game_id")!.toI64()
 
-    const game = Game.load(game_id)
+    const game = Game.load(game_id.toString())
     if (!game) {
         log.error("handleInternalStopGame: Game not found", [])
         return
     }
 
-    store.remove("Game", game_id)
+    log.warning("handleInternalStopGame: Game {} stopped", [game.id])
+    store.remove("Game", game.id)
     return
 }
