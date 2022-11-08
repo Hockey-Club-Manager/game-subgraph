@@ -337,6 +337,8 @@ function handleOnGetTeam (
         return
     }
 
+    const args = json.fromBytes(functionCall.args).toObject()
+
     // main logic
     // const returnedValue = receiptWithOutcome.outcome.logs
     let returnedValue: TypedMap<string, JSONValue>;
@@ -349,6 +351,10 @@ function handleOnGetTeam (
         // }
         // log.warning("returnBytes: {}, args: {}", [returnBytes.toString(), functionCall.args.toString()])
         if (returnBytes == "null" || returnBytes == "false" || returnBytes == "true") {
+            if (receiptWithOutcome.outcome.logs.some(log => log.includes("The team is incomplete"))) {
+                log.error("handleOnGetTeam: The team is incomplete", []);
+                return
+            }
             const userId = receiptWithOutcome.receipt.signerId;
             let user = User.load(userId)
             if (!user) {
@@ -364,7 +370,7 @@ function handleOnGetTeam (
                 user.sent_requests_play = new Array<string>()
                 user.requests_play_received = new Array<string>()
             }
-            user.deposit = functionCall.deposit
+            user.deposit = args.get("deposit")!.toBigInt()
             user.is_available = true
             user.save()
             return
