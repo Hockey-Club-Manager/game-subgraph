@@ -19,7 +19,7 @@ export function typedMapToString(typedMap: TypedMap<string, JSONValue>): string 
                 stringValue = value.toBool().toString()
                 break
             case JSONValueKind.NUMBER:
-                stringValue = value.toI64().toString()
+                stringValue = value.toBigInt().toString()
         }
 
         if (typedMap.entries[i].value.isNull())
