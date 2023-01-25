@@ -906,6 +906,9 @@ function handleSetTeamLogo(action: near.ActionValue, receiptWithOutcome: near.Re
 
     // set_team_logo(&self, form_name: &str, patter_name: &str, first_layer_color_numer: &str, second_layer_color_number: &str)
     const args = json.fromString(functionCall.args.toString()).toObject()
+    let teamName = ""
+    if (!(args.get("team_name") == null))
+        teamName = args.get("team_name")!.toString()
     const formName = args.get("form_name")!.toString()
     const patternName = args.get("pattern_name")!.toString()
     const firstLayerColorNumber = args.get("first_layer_color_number")!.toString()
@@ -915,6 +918,7 @@ function handleSetTeamLogo(action: near.ActionValue, receiptWithOutcome: near.Re
     if (!team_logo) {
         team_logo = new TeamLogo(receiptWithOutcome.receipt.signerId)
     }
+    team_logo.team_name = teamName
     team_logo.form_name = formName
     team_logo.pattern_name = patternName
     team_logo.first_layer_color_number = firstLayerColorNumber

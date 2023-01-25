@@ -13,6 +13,7 @@ type User @entity {
 
 type TeamLogo @entity {
     id: ID!
+    team_name: String!
     form_name: String!
     pattern_name: String!
     first_layer_color_number: String!
