@@ -912,7 +912,7 @@ function handleSetTeamLogo(action: near.ActionValue, receiptWithOutcome: near.Re
     }
 
     let teamName = ""
-    if (data.get("team_name") != null)
+    if (data.get("team_name") != null && !data.get("team_name")!.isNull())
         teamName = data.get("team_name")!.toString()
     const formName = data.get("form_name")!.toString()
     const patternName = data.get("pattern_name")!.toString()
