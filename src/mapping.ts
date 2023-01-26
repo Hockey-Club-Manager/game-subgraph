@@ -906,13 +906,18 @@ function handleSetTeamLogo(action: near.ActionValue, receiptWithOutcome: near.Re
 
     // set_team_logo(&self, form_name: &str, patter_name: &str, first_layer_color_numer: &str, second_layer_color_number: &str)
     const args = json.fromString(functionCall.args.toString()).toObject()
+    let data = args;
+    if (args.get("logo_json") != null) {
+        data = json.fromString(args.get("logo_json")!.toString()).toObject()
+    }
+
     let teamName = ""
-    if (!(args.get("team_name") == null))
-        teamName = args.get("team_name")!.toString()
-    const formName = args.get("form_name")!.toString()
-    const patternName = args.get("pattern_name")!.toString()
-    const firstLayerColorNumber = args.get("first_layer_color_number")!.toString()
-    const secondLayerColorNumber = args.get("second_layer_color_number")!.toString()
+    if (data.get("team_name") != null)
+        teamName = data.get("team_name")!.toString()
+    const formName = data.get("form_name")!.toString()
+    const patternName = data.get("pattern_name")!.toString()
+    const firstLayerColorNumber = data.get("first_layer_color_number")!.toString()
+    const secondLayerColorNumber = data.get("second_layer_color_number")!.toString()
 
     let team_logo = TeamLogo.load(receiptWithOutcome.receipt.signerId)
     if (!team_logo) {
