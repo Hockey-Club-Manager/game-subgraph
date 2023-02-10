@@ -163,6 +163,15 @@ export class TeamLogo extends Entity {
     this.set("id", Value.fromString(value));
   }
 
+  get username(): string {
+    let value = this.get("username");
+    return value!.toString();
+  }
+
+  set username(value: string) {
+    this.set("username", Value.fromString(value));
+  }
+
   get team_name(): string {
     let value = this.get("team_name");
     return value!.toString();

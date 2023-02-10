@@ -13,6 +13,7 @@ type User @entity {
 
 type TeamLogo @entity {
     id: ID!
+    username: String!
     team_name: String!
     form_name: String!
     pattern_name: String!
